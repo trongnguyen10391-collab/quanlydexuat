@@ -406,8 +406,40 @@
             const btnDashboard = document.getElementById('btn-dashboard');
             const btnProposals = document.getElementById('btn-proposals');
             const btnStatistics = document.getElementById('btn-statistics');
-            if (currentUser.role === 'staff') { btnDashboard.style.display = 'none'; btnStatistics.style.display = 'none'; }
-            else if (currentUser.role === 'manager') { btnProposals.style.display = 'none'; }
+            
+            // Đặt lại mặc định hiển thị tất cả trước khi xét quyền
+            btnDashboard.style.display = 'block';
+            btnProposals.style.display = 'block';
+            btnStatistics.style.display = 'block';
+
+            // Áp dụng quyền dựa trên vai trò
+            if (currentUser.role === 'staff') {
+                btnDashboard.style.display = 'none';
+                btnStatistics.style.display = 'none';
+            } else if (currentUser.role === 'manager') {
+                btnProposals.style.display = 'none'; // Quản lý không làm việc trực tiếp trên tab Proposals
+            }
+            
+            // Xử lý hiển thị các vùng chức năng trong tab Proposals
+            const adminForm = document.getElementById('admin-form-container');
+            const adminUserForm = document.getElementById('admin-user-container');
+            const excelContainer = document.getElementById('excel-export-container');
+
+            if (currentUser.role === 'admin') {
+                if(adminForm) adminForm.style.display = 'block';
+                if(adminUserForm) adminUserForm.style.display = 'block';
+                if(excelContainer) excelContainer.style.display = 'block';
+            } else if (currentUser.role === 'manager') {
+                if(adminForm) adminForm.style.display = 'none';
+                if(adminUserForm) adminUserForm.style.display = 'none';
+                if(excelContainer) excelContainer.style.display = 'block';
+            } else {
+                // Quyền staff
+                if(adminForm) adminForm.style.display = 'none';
+                if(adminUserForm) adminUserForm.style.display = 'none';
+                if(excelContainer) excelContainer.style.display = 'none';
+            }
+        }
         }
 
         async function createUser(e) {
