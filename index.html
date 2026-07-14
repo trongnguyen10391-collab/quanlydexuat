@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Quản Lý Đề Xuất - Mobile Responsive</title>
+    <title>Hệ Thống Quản Lý Đề Xuất - Supabase Database</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-gray-100 font-sans text-gray-800 antialiased">
 
@@ -15,7 +16,7 @@
             <div class="text-center mb-6">
                 <span class="text-4xl">🏥</span>
                 <h1 class="text-xl sm:text-2xl font-bold text-gray-800 mt-2">ĐĂNG NHẬP HỆ THỐNG</h1>
-                <p class="text-xs text-gray-400 mt-1">Hệ thống phân phối & xử lý đề xuất sự cố</p>
+                <p class="text-xs text-gray-400 mt-1">Dữ liệu lưu trữ đám mây tập trung trực tuyến</p>
             </div>
             <form onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
@@ -29,7 +30,7 @@
                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Đăng Nhập</button>
             </form>
             <div class="mt-4 bg-slate-50 p-3 rounded-lg border text-xs text-gray-500 space-y-1">
-                <p class="font-bold text-slate-700">💡 Tài khoản thử nghiệm (Mật khẩu: 123):</p>
+                <p class="font-bold text-slate-700">💡 Tài khoản đồng bộ hệ thống (Mật khẩu: 123):</p>
                 <p>• Admin: <code class="bg-gray-200 px-1 rounded text-red-600 font-bold">admin</code></p>
                 <p>• Quản lý: <code class="bg-gray-200 px-1 rounded text-amber-600 font-bold">quanly</code></p>
                 <p>• Nhân viên: <code class="bg-gray-200 px-1 rounded text-blue-600 font-bold">nv_cuong</code></p>
@@ -43,15 +44,13 @@
             <div class="p-5">
                 <div class="flex items-center justify-between mb-6">
                     <h1 class="text-base font-bold tracking-wider uppercase flex items-center gap-2">🏥 QUẢN LÝ ĐỀ XUẤT</h1>
-                    <button onclick="toggleSidebar()" class="lg:hidden text-gray-400 hover:text-white p-1">
-                        ✕
-                    </button>
+                    <button onclick="toggleSidebar()" class="lg:hidden text-gray-400 hover:text-white p-1">✕</button>
                 </div>
                 
                 <div class="mb-6 bg-slate-800 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
                     <div class="min-w-0 flex-1">
                         <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Xin chào,</p>
-                        <p id="user-display-name" class="text-sm font-bold text-indigo-300 truncate">User Name</p>
+                        <p id="user-display-name" class="text-sm font-bold text-indigo-300 truncate">Đang tải...</p>
                     </div>
                     <button onclick="handleLogout()" class="text-xs bg-slate-700 hover:bg-red-700 px-2 py-1 rounded transition text-gray-300 ml-2 shrink-0">Thoát</button>
                 </div>
@@ -73,9 +72,7 @@
         <div class="flex-1 flex flex-col overflow-y-auto min-w-0">
             <header class="bg-white shadow-sm px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b sticky top-0 z-20">
                 <div class="flex items-center gap-3">
-                    <button onclick="toggleSidebar()" class="lg:hidden text-gray-600 hover:text-gray-900 bg-gray-100 p-2 rounded-lg">
-                        ☰
-                    </button>
+                    <button onclick="toggleSidebar()" class="lg:hidden text-gray-600 hover:text-gray-900 bg-gray-100 p-2 rounded-lg">☰</button>
                     <h2 id="page-title" class="text-lg font-bold text-gray-800 truncate">Bảng Điều Khiển</h2>
                 </div>
                 
@@ -88,15 +85,14 @@
                     </select>
                     
                     <div id="custom-date-container" class="hidden flex flex-wrap items-center gap-1.5 pl-2 border-t sm:border-t-0 sm:border-l border-gray-200 pt-1.5 sm:pt-0 w-full sm:w-auto">
-                        <input type="date" id="filter-start-date" onchange="render()" class="border rounded px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-indigo-500 max-w-[120px]" value="2026-07-14">
+                        <input type="date" id="filter-start-date" onchange="fetchDataFromSupabase()" class="border rounded px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-indigo-500 max-w-[120px]" value="2026-07-14">
                         <span class="text-xs text-gray-400">đến</span>
-                        <input type="date" id="filter-end-date" onchange="render()" class="border rounded px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-indigo-500 max-w-[120px]" value="2026-07-14">
+                        <input type="date" id="filter-end-date" onchange="fetchDataFromSupabase()" class="border rounded px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-indigo-500 max-w-[120px]" value="2026-07-14">
                     </div>
                 </div>
             </header>
 
             <main class="p-4 sm:p-6 space-y-6">
-                
                 <div id="tab-dashboard" class="space-y-6">
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                         <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-blue-500">
@@ -119,13 +115,11 @@
 
                     <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
                         <h3 class="text-sm sm:text-base font-bold text-gray-700 mb-4">📋 Tiến độ dòng công việc tổng quát</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="dashboard-kanban">
-                            </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="dashboard-kanban"></div>
                     </div>
                 </div>
 
                 <div id="tab-proposals" class="space-y-6 hidden">
-                    
                     <div id="excel-export-container" class="bg-white p-4 rounded-xl shadow-sm border border-blue-100">
                         <h3 class="text-xs sm:text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">📊 BÁO CÁO VÀ XUẤT FILE EXCEL</h3>
                         <div class="flex flex-wrap items-end gap-3">
@@ -169,7 +163,6 @@
                                         <option value="Tầng 3">Tầng 3</option>
                                         <option value="Tầng 4">Tầng 4</option>
                                         <option value="Tầng 5">Tầng 5</option>
-                                        <option value="Ngoại cảnh">Ngoại cảnh</option>
                                     </select>
                                 </div>
                                 <div class="sm:col-span-2 flex justify-end">
@@ -180,19 +173,13 @@
 
                         <div id="admin-user-container" class="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-emerald-100 flex flex-col justify-between">
                             <div>
-                                <h3 class="text-xs sm:text-sm font-bold text-emerald-900 mb-2">👥 TẠO USER MỚI</h3>
+                                <h3 class="text-xs sm:text-sm font-bold text-emerald-900 mb-2">👥 TẠO USER MỚI (LƯU DB)</h3>
                                 <form onsubmit="createUser(event)" class="space-y-2">
                                     <div class="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <input type="text" id="u-username" required class="w-full border rounded-lg px-2 py-1 text-xs" placeholder="Username">
-                                        </div>
-                                        <div>
-                                            <input type="text" id="u-password" required class="w-full border rounded-lg px-2 py-1 text-xs" placeholder="Mật khẩu">
-                                        </div>
+                                        <div><input type="text" id="u-username" required class="w-full border rounded-lg px-2 py-1 text-xs" placeholder="Username"></div>
+                                        <div><input type="text" id="u-password" required class="w-full border rounded-lg px-2 py-1 text-xs" placeholder="Mật khẩu"></div>
                                     </div>
-                                    <div>
-                                        <input type="text" id="u-fullname" required class="w-full border rounded-lg px-2 py-1 text-xs" placeholder="Họ tên nhân sự">
-                                    </div>
+                                    <div><input type="text" id="u-fullname" required class="w-full border rounded-lg px-2 py-1 text-xs" placeholder="Họ tên nhân sự"></div>
                                     <div>
                                         <select id="u-role" class="w-full border rounded-lg px-2 py-1 text-xs">
                                             <option value="staff">Nhân viên thực hiện</option>
@@ -208,10 +195,8 @@
                     </div>
 
                     <div class="bg-white rounded-xl shadow-sm overflow-hidden border">
-                        <div class="p-4 border-b bg-gray-50">
-                            <h3 id="table-view-title" class="text-sm sm:text-base font-bold text-gray-700">📋 Danh Sách Đề Xuất</h3>
-                        </div>
-
+                        <div class="p-4 border-b bg-gray-50"><h3 id="table-view-title" class="text-sm sm:text-base font-bold text-gray-700">📋 Danh Sách Đề Xuất</h3></div>
+                        
                         <div class="hidden lg:block overflow-x-auto">
                             <table class="w-full text-left border-collapse">
                                 <thead>
@@ -229,8 +214,7 @@
                             </table>
                         </div>
 
-                        <div id="proposal-mobile-cards" class="block lg:hidden divide-y divide-gray-100 bg-gray-50/50 p-2 space-y-2">
-                            </div>
+                        <div id="proposal-mobile-cards" class="block lg:hidden divide-y divide-gray-100 bg-gray-50/50 p-2 space-y-2"></div>
                     </div>
                 </div>
 
@@ -238,9 +222,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                         <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm md:col-span-2">
                             <h3 class="text-sm sm:text-base font-bold mb-4 text-gray-700">📊 Hiệu suất xử lý nhân sự</h3>
-                            <div class="h-64">
-                                <canvas id="staffChart"></canvas>
-                            </div>
+                            <div class="h-64"><canvas id="staffChart"></canvas></div>
                         </div>
                         <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm overflow-x-auto">
                             <h3 class="text-sm sm:text-base font-bold mb-4 text-gray-700">📈 Sản lượng</h3>
@@ -266,52 +248,63 @@
                         </div>
                     </div>
                 </div>
-
             </main>
         </div>
     </div>
 
     <script>
-        const DEFAULT_USERS = [
-            { username: "admin", name: "Trần Thị Admin", role: "admin", password: "123" },
-            { username: "quanly", name: "Nguyễn Văn Quản Lý", role: "manager", password: "123" },
-            { username: "nv_cuong", name: "Lê Hoàng Cường", role: "staff", password: "123" },
-            { username: "nv_dung", name: "Phạm Minh Dũng", role: "staff", password: "123" }
-        ];
+        // =======================================================
+        // ĐIỀN THÔNG TIN SUPABASE CỦA BẠN VÀO ĐÂY
+        // =======================================================
+        const SUPABASE_URL = "https://ztnsmstxtgdysurnpcpn.supabase.co/rest/v1/"; 
+        const SUPABASE_ANON_KEY = "sb_publishable_prkt5-F3meDr4hO-87x32g_icAptL6W";
+        
+        const supabase = (SUPABASE_URL !== "https://ztnsmstxtgdysurnpcpn.supabase.co/rest/v1/") ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
-        if (!localStorage.getItem('users_sys_v9')) localStorage.setItem('users_sys_v9', JSON.stringify(DEFAULT_USERS));
-
-        if (!localStorage.getItem('proposals_sys_v9')) {
-            const sampleData = [
-                { id: 1, title: "Sửa mạng Lan phòng họp", system: "Hệ thống CNTT", dept: "Khoa Cấp Cứu", floor: "Tầng M", created_at: "2026-07-14 08:30", completed_at: "", staff_user: "nv_cuong", staff_name: "Lê Hoàng Cường", status: "Đang xử lý", reason: "" },
-                { id: 2, title: "Thay bóng đèn LED bị cháy", system: "Hệ thống Điện", dept: "Khoa Ngoại Tổng Hợp", floor: "Tầng 2", created_at: "2026-07-14 09:15", completed_at: "2026-07-14 11:00", staff_user: "nv_dung", staff_name: "Phạm Minh Dũng", status: "Hoàn thành", reason: "" },
-                { id: 3, title: "Thông nghẹt lavabo", system: "Hệ thống Nước", dept: "Khoa Khám Bệnh", floor: "Tầng hầm", created_at: "2026-07-13 14:00", completed_at: "", staff_user: "", staff_name: "", status: "Chờ phân công", reason: "" }
-            ];
-            localStorage.setItem('proposals_sys_v9', JSON.stringify(sampleData));
-        }
-
-        let appUsers = JSON.parse(localStorage.getItem('users_sys_v9'));
-        let proposals = JSON.parse(localStorage.getItem('proposals_sys_v9'));
+        let appUsers = [];
+        let proposals = [];
         let currentUser = null;
         let chartInstances = { staff: null, system: null, dept: null };
 
-        // HÀM ĐÓNG / MỞ SIDEBAR TRÊN DI ĐỘNG
+        // Tự động tải dữ liệu khi trang web được mở
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (!supabase) {
+                alert("Hệ thống chưa cấu hình API Supabase. Hãy điền mã cấu hình của bạn vào code!");
+                return;
+            }
+            await loadAllUsers();
+        });
+
+        async function loadAllUsers() {
+            const { data, error } = await supabase.from('users').select('*');
+            if (!error && data) appUsers = data;
+        }
+
+        async function fetchDataFromSupabase() {
+            if (!supabase) return;
+            const { data, error } = await supabase.from('proposals').select('*').order('id', { ascending: false });
+            if (!error && data) {
+                proposals = data;
+                render();
+            }
+        }
+
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
             if (sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.remove('-translate-x-full');
-                overlay.classList.remove('hidden');
+                sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden');
             } else {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.add('hidden');
+                sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden');
             }
         }
 
-        function handleLogin(e) {
+        async function handleLogin(e) {
             e.preventDefault();
             const usernameInput = document.getElementById('login-username').value.trim().toLowerCase();
             const passwordInput = document.getElementById('login-password').value.trim();
+            
+            await loadAllUsers(); // Làm mới danh sách tài khoản từ DB
             const user = appUsers.find(u => u.username === usernameInput && u.password === passwordInput);
 
             if (user) {
@@ -322,9 +315,10 @@
                 document.getElementById('role-badge').innerText = user.role==='admin'?'Admin':(user.role==='manager'?'Quản lý':'Nhân viên');
                 
                 applyUIPermissions();
+                await fetchDataFromSupabase();
                 switchTab(currentUser.role === 'staff' ? 'proposals' : 'dashboard');
             } else {
-                alert('Tên đăng nhập hoặc mật khẩu sai!');
+                alert('Tên đăng nhập hoặc mật khẩu không chính xác trên Hệ thống!');
             }
         }
 
@@ -338,9 +332,7 @@
             const btnDashboard = document.getElementById('btn-dashboard');
             const btnProposals = document.getElementById('btn-proposals');
             const btnStatistics = document.getElementById('btn-statistics');
-
             btnDashboard.style.display = 'block'; btnProposals.style.display = 'block'; btnStatistics.style.display = 'block';
-
             if (currentUser.role === 'staff') {
                 btnDashboard.style.display = 'none'; btnStatistics.style.display = 'none';
             } else if (currentUser.role === 'manager') {
@@ -348,19 +340,22 @@
             }
         }
 
-        function createUser(e) {
+        async function createUser(e) {
             e.preventDefault();
             const username = document.getElementById('u-username').value.trim().toLowerCase();
             const password = document.getElementById('u-password').value.trim();
             const name = document.getElementById('u-fullname').value.trim();
             const role = document.getElementById('u-role').value;
 
-            if (appUsers.some(u => u.username === username)) return alert('Tài khoản đã tồn tại!');
-
-            appUsers.push({ username, name, role, password });
-            localStorage.setItem('users_sys_v9', JSON.stringify(appUsers));
-            alert('Tạo user thành công!');
-            render();
+            const { error } = await supabase.from('users').insert([{ username, password, name, role }]);
+            if (error) {
+                alert('Lỗi khi tạo user: ' + error.message);
+            } else {
+                alert('Tài khoản mới đã được lưu trực tiếp vào Database!');
+                document.getElementById('u-username').value = ''; document.getElementById('u-password').value = ''; document.getElementById('u-fullname').value = '';
+                await loadAllUsers();
+                render();
+            }
         }
 
         function toggleCustomDateInputs() {
@@ -374,7 +369,6 @@
         function isProposalInTimeRange(createdStr, range) {
             const pDate = new Date(createdStr.split(' ')[0]);
             const today = new Date("2026-07-14");
-
             if (range === 'today') return createdStr.startsWith("2026-07-14");
             if (range === 'week') return Math.ceil(Math.abs(today - pDate) / (1000 * 60 * 60 * 24)) <= 7 && pDate <= today;
             if (range === 'month') return pDate.getMonth() === today.getMonth() && pDate.getFullYear() === today.getFullYear();
@@ -382,8 +376,7 @@
                 const start = document.getElementById('filter-start-date').value;
                 const end = document.getElementById('filter-end-date').value;
                 if (!start || !end) return true;
-                const sDate = new Date(start); const eDate = new Date(end); eDate.setHours(23,59,59);
-                return pDate >= sDate && pDate <= eDate;
+                return pDate >= new Date(start) && pDate <= new Date(end + "T23:59:59");
             }
             return false;
         }
@@ -399,24 +392,12 @@
             document.getElementById(`tab-${tabName}`).classList.remove('hidden');
             document.getElementById(`btn-${tabName}`).classList.add('bg-slate-800', 'font-semibold');
             
-            const titles = { 'dashboard': 'Bảng Điều Khiển', 'proposals': 'Tiếp Nhận & Xử Lý', 'statistics': 'Thống Kê Tổng Hợp' };
-            document.getElementById('page-title').innerText = titles[tabName];
-
-            // Tự đóng thanh sidebar sau khi click tab trên điện thoại
-            const sidebar = document.getElementById('sidebar');
-            if (!sidebar.classList.contains('-translate-x-full') && window.innerWidth < 1024) {
-                toggleSidebar();
-            }
-
+            document.getElementById('page-title').innerText = { 'dashboard': 'Bảng Điều Khiển', 'proposals': 'Tiếp Nhận & Xử Lý', 'statistics': 'Thống Kê Tổng Hợp' }[tabName];
+            if (window.innerWidth < 1024 && !document.getElementById('sidebar').classList.contains('-translate-x-full')) toggleSidebar();
             render();
         }
 
-        function saveAndRefresh() {
-            localStorage.setItem('proposals_sys_v9', JSON.stringify(proposals));
-            render();
-        }
-
-        function addProposal(e) {
+        async function addProposal(e) {
             e.preventDefault();
             const title = document.getElementById('p-title').value.trim();
             const system = document.getElementById('p-system').value.trim();
@@ -426,68 +407,75 @@
             const now = new Date();
             const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
-            proposals.push({
-                id: Date.now(), title, system, dept, floor, created_at: dateStr, completed_at: "",
+            const { error } = await supabase.from('proposals').insert([{
+                title, system, dept, floor, created_at: dateStr, completed_at: "",
                 staff_user: "", staff_name: "", status: "Chờ phân công", reason: ""
-            });
-            document.getElementById('p-title').value = ''; document.getElementById('p-system').value = ''; document.getElementById('p-dept').value = '';
-            saveAndRefresh();
-        }
+            }]);
 
-        function assignStaff(id, staffUsername) {
-            const prop = proposals.find(p => p.id === id);
-            if (prop) {
-                if (staffUsername === "") {
-                    prop.staff_user = ""; prop.staff_name = ""; prop.status = "Chờ phân công";
-                } else {
-                    const ts = appUsers.find(u => u.username === staffUsername);
-                    prop.staff_user = staffUsername; prop.staff_name = ts.name; prop.status = "Chờ xác nhận";
-                }
-                prop.reason = ""; saveAndRefresh();
+            if (error) alert("Lỗi lưu DB: " + error.message);
+            else {
+                document.getElementById('p-title').value = ''; document.getElementById('p-system').value = ''; document.getElementById('p-dept').value = '';
+                await fetchDataFromSupabase();
             }
         }
 
-        function staffAction(id, action) {
+        async function assignStaff(id, staffUsername) {
+            let updateFields = {};
+            if (staffUsername === "") {
+                updateFields = { staff_user: "", staff_name: "", status: "Chờ phân công", reason: "" };
+            } else {
+                const ts = appUsers.find(u => u.username === staffUsername);
+                updateFields = { staff_user: staffUsername, staff_name: ts.name, status: "Chờ xác nhận", reason: "" };
+            }
+
+            const { error } = await supabase.from('proposals').update(updateFields).eq('id', id);
+            if (error) alert("Lỗi cập nhật: " + error.message);
+            else await fetchDataFromSupabase();
+        }
+
+        async function staffAction(id, action) {
             const prop = proposals.find(p => p.id === id);
             if (!prop) return;
             const now = new Date();
             const timeNow = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
-            if (action === 'confirm') prop.status = "Đang xử lý";
-            else if (action === 'complete') { prop.status = "Hoàn thành"; prop.completed_at = timeNow; }
+            let updateFields = {};
+            if (action === 'confirm') updateFields = { status: "Đang xử lý" };
+            else if (action === 'complete') updateFields = { status: "Hoàn thành", completed_at: timeNow };
             else if (action === 'incomplete') {
                 const r = prompt("Nhập lý do hoãn/chưa xong:");
-                if (r && r.trim() !== "") { prop.status = "Đang xử lý"; prop.reason = r.trim(); }
-                else return alert("Phải nhập lý do!");
+                if (r && r.trim() !== "") updateFields = { status: "Đang xử lý", reason: r.trim() };
+                else return alert("Phải có lý do báo hoãn!");
             }
-            saveAndRefresh();
+
+            const { error } = await supabase.from('proposals').update(updateFields).eq('id', id);
+            if (error) alert("Lỗi: " + error.message);
+            else await fetchDataFromSupabase();
         }
 
-        function deleteProposal(id) {
-            if (confirm('Xóa đề xuất này?')) { proposals = proposals.filter(p => p.id !== id); saveAndRefresh(); }
+        async function deleteProposal(id) {
+            if (confirm('Bạn chắc chắn muốn XÓA VĨNH VIỄN đề xuất này khỏi tệp DB lưu trữ?')) {
+                const { error } = await supabase.from('proposals').delete().eq('id', id);
+                if (error) alert("Lỗi xóa: " + error.message);
+                else await fetchDataFromSupabase();
+            }
         }
 
         function exportToExcel() {
             const start = document.getElementById('excel-start-date').value;
             const end = document.getElementById('excel-end-date').value;
             if (!start || !end) return alert('Hãy nhập thời gian!');
-            
             const targetData = proposals.filter(p => {
                 const pd = new Date(p.created_at.split(' ')[0]);
                 return pd >= new Date(start) && pd <= new Date(end + "T23:59:59");
             });
-
             if(targetData.length === 0) return alert('Không có dữ liệu!');
-
             const raw = targetData.map((p, i) => ({
                 "STT": i + 1, "Nội Dung": p.title, "Hệ Thống": p.system, "Khoa/Phòng": p.dept, "Tầng": p.floor,
-                "Nhận Lúc": p.created_at, "Xong Lúc": p.completed_at || "Chưa", "Nhân Viên": p.staff_name || "Chưa",
-                "Trạng Thái": p.status, "Tồn đọng": p.reason || ""
+                "Nhận Lúc": p.created_at, "Xong Lúc": p.completed_at || "Chưa", "Nhân Viên": p.staff_name || "Chưa", "Trạng Thái": p.status, "Tồn đọng": p.reason || ""
             }));
-
             const ws = XLSX.utils.json_to_sheet(raw); const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Báo cáo");
-            XLSX.writeFile(wb, `Bao_Cao_${start}_to_${end}.xlsx`);
+            XLSX.utils.book_append_sheet(wb, ws, "Báo cáo"); XLSX.writeFile(wb, `Bao_Cao_${start}_to_${end}.xlsx`);
         }
 
         function render() {
@@ -503,7 +491,6 @@
             document.getElementById('kpi-processing').innerText = kanbanData.filter(p => p.status === "Đang xử lý").length;
             document.getElementById('kpi-completed').innerText = kanbanData.filter(p => p.status === "Hoàn thành").length;
 
-            // Xây dựng Kanban tổng quát (ẩn hiện gọn trên di động nhờ flex quấn dọc)
             const kanbanContainer = document.getElementById('dashboard-kanban');
             kanbanContainer.innerHTML = ['Chờ xác nhận', 'Đang xử lý', 'Hoàn thành'].map(st => {
                 const list = kanbanData.filter(p => p.status === st);
@@ -527,7 +514,6 @@
                 `;
             }).join('');
 
-            // Phân quyền giao diện
             const excelContainer = document.getElementById('excel-export-container');
             const adminForm = document.getElementById('admin-form-container');
             const adminUserForm = document.getElementById('admin-user-container');
@@ -550,13 +536,10 @@
             const mobileCardsContainer = document.getElementById('proposal-mobile-cards');
             const staffUsersList = appUsers.filter(u => u.role === 'staff');
 
-            let desktopHtml = '';
-            let mobileHtml = '';
+            let desktopHtml = ''; let mobileHtml = '';
 
             timeFiltered.forEach(p => {
                 if (currentUser.role === 'staff' && p.staff_user !== currentUser.username) return;
-
-                // Xây dựng dropdown phân công công việc
                 let assignWidget = '';
                 if (currentUser.role === 'admin' || currentUser.role === 'manager') {
                     assignWidget = `<select onchange="assignStaff(${p.id}, this.value)" class="border text-xs rounded p-1 bg-white w-full">`;
@@ -567,26 +550,16 @@
                     assignWidget = `<span class="font-medium text-xs">👤 ${p.staff_name || 'Chưa phân'}</span>`;
                 }
 
-                // Xây dựng các nút nghiệp vụ xử lý
                 let actionWidget = '';
                 if (currentUser.role === 'staff' && p.staff_user === currentUser.username) {
-                    if (p.status === 'Chờ xác nhận') {
-                        actionWidget = `<button onclick="staffAction(${p.id}, 'confirm')" class="w-full bg-blue-600 text-white font-bold px-3 py-1.5 rounded text-xs hover:bg-blue-700 shadow-xs">Nhận Việc</button>`;
-                    } else if (p.status === 'Đang xử lý') {
-                        actionWidget = `
-                            <div class="flex gap-1.5 w-full">
-                                <button onclick="staffAction(${p.id}, 'complete')" class="flex-1 bg-green-600 text-white font-bold py-1.5 rounded text-xs hover:bg-green-700">Xong</button>
-                                <button onclick="staffAction(${p.id}, 'incomplete')" class="flex-1 bg-amber-500 text-white font-bold py-1.5 rounded text-xs hover:bg-amber-600">Hoãn</button>
-                            </div>
-                        `;
-                    } else {
-                        actionWidget = `<span class="text-green-600 font-bold block text-center bg-green-50 py-1 rounded">✅ Hoàn tất</span>`;
-                    }
+                    if (p.status === 'Chờ xác nhận') actionWidget = `<button onclick="staffAction(${p.id}, 'confirm')" class="w-full bg-blue-600 text-white font-bold px-3 py-1.5 rounded text-xs hover:bg-blue-700">Nhận Việc</button>`;
+                    else if (p.status === 'Đang xử lý') {
+                        actionWidget = `<div class="flex gap-1.5 w-full"><button onclick="staffAction(${p.id}, 'complete')" class="flex-1 bg-green-600 text-white font-bold py-1.5 rounded text-xs hover:bg-green-700">Xong</button><button onclick="staffAction(${p.id}, 'incomplete')" class="flex-1 bg-amber-500 text-white font-bold py-1.5 rounded text-xs hover:bg-amber-600">Hoãn</button></div>`;
+                    } else actionWidget = `<span class="text-green-600 font-bold block text-center bg-green-50 py-1 rounded">✅ Hoàn tất</span>`;
                 } else {
                     actionWidget = `<span class="font-semibold px-2 py-1 rounded block text-center text-[11px] ${p.status==='Hoàn thành'?'bg-green-100 text-green-800':p.status==='Đang xử lý'?'bg-indigo-100 text-indigo-800':'bg-yellow-100 text-yellow-800'}">${p.status}</span>`;
                 }
 
-                // 🖥️ 1. Dựng dòng HTML cho phiên bản máy tính lớn
                 desktopHtml += `
                     <tr class="hover:bg-gray-50 border-b">
                         <td class="py-3 px-4"><span class="font-bold text-gray-800 block">${p.title}</span><span class="text-[10px] text-indigo-700 font-semibold">${p.system}</span></td>
@@ -599,25 +572,18 @@
                     </tr>
                 `;
 
-                // 📱 2. Dựng dạng khối Thẻ Card cho điện thoại di động
                 mobileHtml += `
                     <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 space-y-3">
                         <div class="flex justify-between items-start gap-2">
-                            <div>
-                                <span class="bg-indigo-50 text-indigo-700 text-[10px] px-2 py-0.5 rounded font-bold">${p.system}</span>
-                                <h4 class="font-bold text-sm text-gray-800 mt-1">${p.title}</h4>
-                            </div>
-                            ${currentUser.role === 'admin' ? `<button onclick="deleteProposal(${p.id})" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded font-bold">Xóa</button>` : ''}
+                            <div><span class="bg-indigo-50 text-indigo-700 text-[10px] px-2 py-0.5 rounded font-bold">${p.system}</span><h4 class="font-bold text-sm text-gray-800 mt-1">${p.title}</h4></div>
+                            ${currentUser.role === 'admin' ? `<button onclick="deleteProposal(${p.id})" class="text-xs bg-red-50 text-red-600 px-2 py-1 rounded font-bold">Xóa</button>` : ''}
                         </div>
-                        <div class="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-2 rounded-lg border border-gray-100">
+                        <div class="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-2 rounded-lg border">
                             <div><p class="text-gray-400 font-medium">Nơi yêu cầu</p><p class="font-bold text-gray-700">${p.dept} (${p.floor})</p></div>
                             <div><p class="text-gray-400 font-medium">Thời gian</p><p class="text-[11px] text-gray-600">${p.created_at}</p></div>
                         </div>
                         <div class="space-y-2">
-                            <div class="flex items-center gap-2 justify-between">
-                                <span class="text-xs text-gray-400 shrink-0 font-medium">Nhân sự:</span>
-                                <div class="w-full max-w-[160px]">${assignWidget}</div>
-                            </div>
+                            <div class="flex items-center gap-2 justify-between"><span class="text-xs text-gray-400 font-medium">Nhân sự:</span><div class="w-full max-w-[160px]">${assignWidget}</div></div>
                             ${p.reason ? `<div class="bg-red-50 p-2 rounded text-xs text-red-700 font-medium">⚠️ Hoãn: ${p.reason}</div>` : ''}
                             <div class="pt-1">${actionWidget}</div>
                         </div>
@@ -626,8 +592,7 @@
             });
 
             tableBody.innerHTML = desktopHtml;
-            mobileCardsContainer.innerHTML = mobileHtml || '<p class="text-center text-gray-400 text-xs py-6">Không tìm thấy đề xuất phù hợp.</p>';
-
+            mobileCardsContainer.innerHTML = mobileHtml || '<p class="text-center text-gray-400 text-xs py-6">Không tìm thấy đề xuất.</p>';
             calculateAdvancedStatistics(timeFiltered, staffUsersList);
         }
 
@@ -637,23 +602,17 @@
                 processingCount: timeFiltered.filter(p => p.staff_user === u.username && p.status === "Đang xử lý").length,
                 completedCount: timeFiltered.filter(p => p.staff_user === u.username && p.status === "Hoàn thành").length
             }));
-
-            document.getElementById('staff-table-body').innerHTML = staffStats.map(s => `
-                <tr><td class="py-2 font-semibold text-gray-700">${s.name}</td><td class="py-2 text-center text-amber-600 font-bold">${s.processingCount}</td><td class="py-2 text-center text-green-600 font-bold">${s.completedCount}</td></tr>
-            `).join('');
+            document.getElementById('staff-table-body').innerHTML = staffStats.map(s => `<tr><td class="py-2 font-semibold text-gray-700">${s.name}</td><td class="py-2 text-center text-amber-600 font-bold">${s.processingCount}</td><td class="py-2 text-center text-green-600 font-bold">${s.completedCount}</td></tr>`).join('');
 
             const systemMap = {}; const deptMap = {};
             timeFiltered.forEach(p => {
-                systemMap[p.system] = (systemMap[p.system] || 0) + 1;
-                deptMap[p.dept] = (deptMap[p.dept] || 0) + 1;
+                systemMap[p.system] = (systemMap[p.system] || 0) + 1; deptMap[p.dept] = (deptMap[p.dept] || 0) + 1;
             });
-
             const systemStats = Object.keys(systemMap).map(k => ({ label: k, count: systemMap[k] })).sort((a,b)=>b.count-a.count);
             const deptStats = Object.keys(deptMap).map(k => ({ label: k, count: deptMap[k] })).sort((a,b)=>b.count-a.count);
 
             document.getElementById('system-table-body').innerHTML = systemStats.map(s => `<tr><td class="py-1.5 font-medium">${s.label}</td><td class="py-1.5 text-right font-bold text-indigo-600">${s.count} việc</td></tr>`).join('');
             document.getElementById('dept-table-body').innerHTML = deptStats.map(d => `<tr><td class="py-1.5 font-medium">${d.label}</td><td class="py-1.5 text-right font-bold text-emerald-600">${d.count} việc</td></tr>`).join('');
-
             renderAllCharts(staffStats, systemStats, deptStats);
         }
 
@@ -662,36 +621,24 @@
             if (chartInstances.system) chartInstances.system.destroy();
             if (chartInstances.dept) chartInstances.dept.destroy();
 
-            const ctxStaff = document.getElementById('staffChart').getContext('2d');
-            chartInstances.staff = new Chart(ctxStaff, {
+            chartInstances.staff = new Chart(document.getElementById('staffChart').getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels: staffStats.map(s => s.name),
-                    datasets: [
-                        { label: 'Đang làm', data: staffStats.map(s => s.processingCount), backgroundColor: '#f59e0b' },
-                        { label: 'Xong', data: staffStats.map(s => s.completedCount), backgroundColor: '#10b981' }
-                    ]
+                    datasets: [{ label: 'Đang làm', data: staffStats.map(s => s.processingCount), backgroundColor: '#f59e0b' }, { label: 'Xong', data: staffStats.map(s => s.completedCount), backgroundColor: '#10b981' }]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
-            const ctxSys = document.getElementById('systemChart').getContext('2d');
-            chartInstances.system = new Chart(ctxSys, {
+            chartInstances.system = new Chart(document.getElementById('systemChart').getContext('2d'), {
                 type: 'doughnut',
-                data: {
-                    labels: systemStats.map(s => s.label),
-                    datasets: [{ data: systemStats.map(s => s.count), backgroundColor: ['#6366f1', '#3b82f6', '#ec4899', '#f59e0b', '#10b981'] }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } } }
+                data: { labels: systemStats.map(s => s.label), datasets: [{ data: systemStats.map(s => s.count), backgroundColor: ['#6366f1', '#3b82f6', '#ec4899', '#f59e0b', '#10b981'] }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 9 } } } } }
             });
 
-            const ctxDept = document.getElementById('deptChart').getContext('2d');
-            chartInstances.dept = new Chart(ctxDept, {
+            chartInstances.dept = new Chart(document.getElementById('deptChart').getContext('2d'), {
                 type: 'bar',
-                data: {
-                    labels: deptStats.map(d => d.label),
-                    datasets: [{ data: deptStats.map(d => d.count), backgroundColor: '#059669' }]
-                },
+                data: { labels: deptStats.map(d => d.label), datasets: [{ data: deptStats.map(d => d.count), backgroundColor: '#059669' }] },
                 options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
         }
