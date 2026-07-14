@@ -252,9 +252,6 @@
     </div>
 
     <script>
-        // =======================================================
-        // ĐIỀN THÔNG TIN SUPABASE CỦA BẠN VÀO ĐÂY
-        // =======================================================
         const SUPABASE_URL = "https://ztnsmstxtgdysurnpcpn.supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_publishable_prkt5-F3meDr4hO-87x32g_icAptL6W";
         
@@ -540,68 +537,27 @@
             else await fetchDataFromSupabase();
         }
 
-async function staffAction(id, action) {
-    if (!supabaseClient) return;
-    const prop = proposals.find(p => p.id === id);
-    if (!prop) return;
-    
-    const now = new Date();
-    const timeNow = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        async function staffAction(id, action) {
+            if (!supabaseClient) return;
+            const now = new Date();
+            const timeNow = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
-    if (action === 'complete') {
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = 'image/*';
-        
-        fileInput.onchange = async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+            let updateFields = {};
+            if (action === 'confirm') {
+                updateFields = { status: "Đang xử lý" };
+            } else if (action === 'complete') {
+                // Đã loại bỏ phần yêu cầu nhập link ảnh
+                updateFields = { status: "Hoàn thành", completed_at: timeNow, reason: "" };
+            } else if (action === 'incomplete') {
+                const r = prompt("Nhập lý do hoãn/chưa xong:");
+                if (r && r.trim() !== "") updateFields = { status: "Đang xử lý", reason: r.trim() };
+                else return alert("Phải có lý do báo hoãn!");
+            }
 
-            alert("Đang tải ảnh lên Drive, vui lòng đợi...");
-
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = async () => {
-                const base64Data = reader.result.split(',')[1];
-                
-                try {
-                    const response = await fetch('https://script.google.com/macros/s/AKfycbxvGa88oMYm9nPyCLeyDWIaV5Bu0DRtsNQ-U1R6xI4RqUDvQy16NTqOcSnbK0bZXsaR/exec', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            filename: file.name,
-                            mimeType: file.type,
-                            data: base64Data
-                        })
-                    });
-                    
-                    const imageUrl = await response.text(); // Nhận URL file từ script
-                    
-                    await updateSupabase(id, { 
-                        status: "Hoàn thành", 
-                        completed_at: timeNow, 
-                        reason: imageUrl // Lưu link Drive trực tiếp
-                    });
-                    alert("Cập nhật thành công!");
-                } catch (err) {
-                    alert("Lỗi tải ảnh: " + err.message);
-                }
-            };
-        };
-        fileInput.click();
-    } else if (action === 'confirm') {
-        await updateSupabase(id, { status: "Đang xử lý" });
-    } else if (action === 'incomplete') {
-        const r = prompt("Nhập lý do hoãn/chưa xong:");
-        if (r && r.trim() !== "") await updateSupabase(id, { status: "Đang xử lý", reason: r.trim() });
-    }
-}
-
-// Hàm bổ trợ cập nhật DB
-async function updateSupabase(id, data) {
-    const { error } = await supabaseClient.from('proposals').update(data).eq('id', id);
-    if (error) alert("Lỗi: " + error.message);
-    else await fetchDataFromSupabase();
-}
+            const { error } = await supabaseClient.from('proposals').update(updateFields).eq('id', id);
+            if (error) alert("Lỗi: " + error.message);
+            else await fetchDataFromSupabase();
+        }
 
         async function deleteProposal(id) {
             if (!supabaseClient) return;
@@ -623,7 +579,7 @@ async function updateSupabase(id, data) {
             if(targetData.length === 0) return alert('Không có dữ liệu!');
             const raw = targetData.map((p, i) => ({
                 "STT": i + 1, "Nội Dung": p.title, "Hệ Thống": p.system, "Khoa/Phòng": p.dept, "Tầng": p.floor,
-                "Nhận Lúc": p.created_at, "Xong Lúc": p.completed_at || "Chưa", "Nhân Viên": p.staff_name || "Chưa", "Trạng Thái": p.status, "Ảnh nghiệm thu/Lý do hoãn": p.reason || ""
+                "Nhận Lúc": p.created_at, "Xong Lúc": p.completed_at || "Chưa", "Nhân Viên": p.staff_name || "Chưa", "Trạng Thái": p.status, "Ghi chú/Lý do": p.reason || ""
             }));
             const ws = XLSX.utils.json_to_sheet(raw); const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Báo cáo"); XLSX.writeFile(wb, `Bao_Cao_${start}_to_${end}.xlsx`);
@@ -653,18 +609,12 @@ async function updateSupabase(id, data) {
                         </div>
                         <div class="space-y-2">
                             ${list.map(p => {
-                                let badgeHtml = '';
-                                if (p.status === 'Hoàn thành' && p.reason && (p.reason.startsWith('http://') || p.reason.startsWith('https://'))) {
-                                    badgeHtml = `<a href="${p.reason}" target="_blank" class="mt-1 inline-block bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-bold border border-emerald-200">👁️ Xem ảnh</a>`;
-                                } else if (p.reason) {
-                                    badgeHtml = `<p class="mt-1 bg-red-50 text-red-700 p-1 rounded font-medium">⚠️ Hoãn: ${p.reason}</p>`;
-                                }
                                 return `
                                     <div class="bg-white p-3 rounded-lg shadow-xs border-l-4 border-indigo-500 text-xs">
                                         <span class="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-bold text-[10px]">${p.system}</span>
                                         <p class="font-bold text-gray-800 mt-1">${p.title}</p>
                                         <p class="text-gray-500 text-[11px]">📍 ${p.dept} (${p.floor})</p>
-                                        ${badgeHtml}
+                                        ${p.reason && p.status !== 'Hoàn thành' ? `<p class="mt-1 bg-red-50 text-red-700 p-1 rounded font-medium">⚠️ Hoãn: ${p.reason}</p>` : ''}
                                     </div>
                                 `;
                             }).join('')}
@@ -731,11 +681,9 @@ async function updateSupabase(id, data) {
                     actionWidget = `<span class="font-semibold px-2 py-1 rounded block text-center text-[11px] ${p.status==='Hoàn thành'?'bg-green-100 text-green-800':p.status==='Đang xử lý'?'bg-indigo-100 text-indigo-800':'bg-yellow-100 text-yellow-800'}">${p.status}</span>`;
                 }
 
-                let reasonOrImgWidget = '';
-                if (p.status === 'Hoàn thành' && p.reason && (p.reason.startsWith('http://') || p.reason.startsWith('https://'))) {
-                    reasonOrImgWidget = `<br><a href="${p.reason}" target="_blank" class="mt-1 inline-block bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold border border-emerald-200 text-[10px]">👁️ Xem ảnh</a>`;
-                } else if (p.reason) {
-                    reasonOrImgWidget = `<span class="text-[10px] text-red-600 block mt-0.5 font-medium bg-red-50 p-0.5 rounded">Lý do: ${p.reason}</span>`;
+                let reasonWidget = '';
+                if (p.reason && p.status !== 'Hoàn thành') {
+                    reasonWidget = `<span class="text-[10px] text-red-600 block mt-0.5 font-medium bg-red-50 p-0.5 rounded">Lý do: ${p.reason}</span>`;
                 }
 
                 desktopHtml += `
@@ -744,7 +692,7 @@ async function updateSupabase(id, data) {
                         <td class="py-3 px-4"><span class="font-medium block">${p.dept}</span><span class="text-[10px] text-gray-400 block">${p.floor}</span></td>
                         <td class="py-3 px-4 text-gray-500 text-[11px]">📥 ${p.created_at} ${p.completed_at ? `<br><span class="text-green-600 font-medium">🏁 ${p.completed_at}</span>` : ''}</td>
                         <td class="py-3 px-4">${assignWidget}</td>
-                        <td class="py-3 px-4"><span>${p.status}</span>${reasonOrImgWidget}</td>
+                        <td class="py-3 px-4"><span>${p.status}</span>${reasonWidget}</td>
                         <td class="py-3 px-4">${actionWidget}</td>
                         ${currentUser.role === 'admin' ? `<td class="py-3 px-4 text-center"><button onclick="deleteProposal(${p.id})" class="text-red-500 hover:text-red-700 font-bold">Xóa</button></td>` : ''}
                     </tr>
@@ -762,7 +710,7 @@ async function updateSupabase(id, data) {
                         </div>
                         <div class="space-y-2">
                             <div class="flex items-center gap-2 justify-between"><span class="text-xs text-gray-400 font-medium">Nhân sự:</span><div class="w-full max-w-[160px]">${assignWidget}</div></div>
-                            ${p.status === 'Hoàn thành' && p.reason && (p.reason.startsWith('http://') || p.reason.startsWith('https://')) ? `<div class="mt-1"><a href="${p.reason}" target="_blank" class="bg-emerald-50 text-emerald-700 text-xs px-3 py-1 rounded font-bold border border-emerald-200 inline-block">👁️ Xem ảnh nghiệm thu</a></div>` : p.reason ? `<div class="bg-red-50 p-2 rounded text-xs text-red-700 font-medium">⚠️ Hoãn: ${p.reason}</div>` : ''}
+                            ${p.reason && p.status !== 'Hoàn thành' ? `<div class="bg-red-50 p-2 rounded text-xs text-red-700 font-medium">⚠️ Hoãn: ${p.reason}</div>` : ''}
                             <div class="pt-1">${actionWidget}</div>
                         </div>
                     </div>
