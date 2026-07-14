@@ -21,7 +21,7 @@
             <form onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Tên đăng nhập</label>
-                    <input type="text" id="login-username" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="admin, quanly, nv_cuong...">
+                    <input type="text" id="login-username" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="Nhập tên tài khoản...">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Mật khẩu</label>
@@ -29,12 +29,6 @@
                 </div>
                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg text-sm transition">Đăng Nhập</button>
             </form>
-            <div class="mt-4 bg-slate-50 p-3 rounded-lg border text-xs text-gray-500 space-y-1">
-                <p class="font-bold text-slate-700">💡 Tài khoản đồng bộ hệ thống (Mật khẩu: 123):</p>
-                <p>• Admin: <code class="bg-gray-200 px-1 rounded text-red-600 font-bold">admin</code></p>
-                <p>• Quản lý: <code class="bg-gray-200 px-1 rounded text-amber-600 font-bold">quanly</code></p>
-                <p>• Nhân viên: <code class="bg-gray-200 px-1 rounded text-blue-600 font-bold">nv_cuong</code></p>
-            </div>
         </div>
     </div>
 
@@ -256,10 +250,14 @@
         // =======================================================
         // ĐIỀN THÔNG TIN SUPABASE CỦA BẠN VÀO ĐÂY
         // =======================================================
-        const SUPABASE_URL = "https://ztnsmstxtgdysurnpcpn.supabase.co/rest/v1/"; 
+        const SUPABASE_URL = "https://ztnsmstxtgdysurnpcpn.supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_publishable_prkt5-F3meDr4hO-87x32g_icAptL6W";
         
-        const supabase = (SUPABASE_URL !== "https://ztnsmstxtgdysurnpcpn.supabase.co/rest/v1/") ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+        // Khởi tạo client an toàn phòng tránh trùng lặp biến trùng tên thư viện
+        let supabaseClient = null;
+        if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
 
         let appUsers = [];
         let proposals = [];
@@ -268,7 +266,7 @@
 
         // Tự động tải dữ liệu khi trang web được mở
         window.addEventListener('DOMContentLoaded', async () => {
-            if (!supabase) {
+            if (!supabaseClient) {
                 alert("Hệ thống chưa cấu hình API Supabase. Hãy điền mã cấu hình của bạn vào code!");
                 return;
             }
@@ -276,13 +274,14 @@
         });
 
         async function loadAllUsers() {
-            const { data, error } = await supabase.from('users').select('*');
+            if (!supabaseClient) return;
+            const { data, error } = await supabaseClient.from('users').select('*');
             if (!error && data) appUsers = data;
         }
 
         async function fetchDataFromSupabase() {
-            if (!supabase) return;
-            const { data, error } = await supabase.from('proposals').select('*').order('id', { ascending: false });
+            if (!supabaseClient) return;
+            const { data, error } = await supabaseClient.from('proposals').select('*').order('id', { ascending: false });
             if (!error && data) {
                 proposals = data;
                 render();
@@ -326,6 +325,8 @@
             currentUser = null;
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('main-app').classList.add('hidden');
+            document.getElementById('login-username').value = '';
+            document.getElementById('login-password').value = '';
         }
 
         function applyUIPermissions() {
@@ -342,12 +343,13 @@
 
         async function createUser(e) {
             e.preventDefault();
+            if (!supabaseClient) return;
             const username = document.getElementById('u-username').value.trim().toLowerCase();
             const password = document.getElementById('u-password').value.trim();
             const name = document.getElementById('u-fullname').value.trim();
             const role = document.getElementById('u-role').value;
 
-            const { error } = await supabase.from('users').insert([{ username, password, name, role }]);
+            const { error } = await supabaseClient.from('users').insert([{ username, password, name, role }]);
             if (error) {
                 alert('Lỗi khi tạo user: ' + error.message);
             } else {
@@ -399,6 +401,7 @@
 
         async function addProposal(e) {
             e.preventDefault();
+            if (!supabaseClient) return;
             const title = document.getElementById('p-title').value.trim();
             const system = document.getElementById('p-system').value.trim();
             const dept = document.getElementById('p-dept').value.trim();
@@ -407,7 +410,7 @@
             const now = new Date();
             const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
-            const { error } = await supabase.from('proposals').insert([{
+            const { error } = await supabaseClient.from('proposals').insert([{
                 title, system, dept, floor, created_at: dateStr, completed_at: "",
                 staff_user: "", staff_name: "", status: "Chờ phân công", reason: ""
             }]);
@@ -420,6 +423,7 @@
         }
 
         async function assignStaff(id, staffUsername) {
+            if (!supabaseClient) return;
             let updateFields = {};
             if (staffUsername === "") {
                 updateFields = { staff_user: "", staff_name: "", status: "Chờ phân công", reason: "" };
@@ -428,12 +432,13 @@
                 updateFields = { staff_user: staffUsername, staff_name: ts.name, status: "Chờ xác nhận", reason: "" };
             }
 
-            const { error } = await supabase.from('proposals').update(updateFields).eq('id', id);
+            const { error } = await supabaseClient.from('proposals').update(updateFields).eq('id', id);
             if (error) alert("Lỗi cập nhật: " + error.message);
             else await fetchDataFromSupabase();
         }
 
         async function staffAction(id, action) {
+            if (!supabaseClient) return;
             const prop = proposals.find(p => p.id === id);
             if (!prop) return;
             const now = new Date();
@@ -448,14 +453,15 @@
                 else return alert("Phải có lý do báo hoãn!");
             }
 
-            const { error } = await supabase.from('proposals').update(updateFields).eq('id', id);
+            const { error } = await supabaseClient.from('proposals').update(updateFields).eq('id', id);
             if (error) alert("Lỗi: " + error.message);
             else await fetchDataFromSupabase();
         }
 
         async function deleteProposal(id) {
+            if (!supabaseClient) return;
             if (confirm('Bạn chắc chắn muốn XÓA VĨNH VIỄN đề xuất này khỏi tệp DB lưu trữ?')) {
-                const { error } = await supabase.from('proposals').delete().eq('id', id);
+                const { error } = await supabaseClient.from('proposals').delete().eq('id', id);
                 if (error) alert("Lỗi xóa: " + error.message);
                 else await fetchDataFromSupabase();
             }
