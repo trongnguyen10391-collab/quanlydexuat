@@ -268,28 +268,24 @@
         let currentUser = null;
         let chartInstances = { staff: null, system: null, dept: null };
 
-        // Tự động kiểm tra phiên làm việc cũ khi mở trang hoặc nhấn F5
         window.addEventListener('DOMContentLoaded', async () => {
             if (!supabaseClient) {
                 alert("Hệ thống chưa cấu hình API Supabase. Hãy điền mã cấu hình của bạn vào code!");
                 return;
             }
             
-            // Tải dữ liệu người dùng trước
             await loadAllUsers();
 
-            // Kiểm tra trạng thái đăng nhập từ localStorage
             const savedUserJson = localStorage.getItem('proposal_app_user');
             if (savedUserJson) {
                 try {
                     const savedUser = JSON.parse(savedUserJson);
-                    // Xác thực lại với danh sách người dùng mới nhất từ DB để đảm bảo mật khẩu/quyền chưa bị thay đổi công khai
                     const verifiedUser = appUsers.find(u => u.username === savedUser.username && u.password === savedUser.password);
                     
                     if (verifiedUser) {
                         currentUser = verifiedUser;
                         executeLoginSuccessBehavior(verifiedUser);
-                        return; // Bỏ qua màn hình đăng nhập
+                        return;
                     }
                 } catch (e) {
                     localStorage.removeItem('proposal_app_user');
@@ -327,12 +323,11 @@
             const usernameInput = document.getElementById('login-username').value.trim().toLowerCase();
             const passwordInput = document.getElementById('login-password').value.trim();
             
-            await loadAllUsers(); // Làm mới danh sách tài khoản từ DB
+            await loadAllUsers();
             const user = appUsers.find(u => u.username === usernameInput && u.password === passwordInput);
 
             if (user) {
                 currentUser = user;
-                // Lưu session vào LocalStorage để chống mất khi F5
                 localStorage.setItem('proposal_app_user', JSON.stringify(user));
                 executeLoginSuccessBehavior(user);
             } else {
@@ -353,7 +348,7 @@
 
         function handleLogout() {
             currentUser = null;
-            localStorage.removeItem('proposal_app_user'); // Xóa phiên lưu trữ chống F5
+            localStorage.removeItem('proposal_app_user');
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('main-app').classList.add('hidden');
             document.getElementById('login-username').value = '';
@@ -436,15 +431,12 @@
                 alert("Lỗi khi sửa tài khoản: " + error.message);
             } else {
                 alert("Đã cập nhật thông tin tài khoản thành công!");
-                
-                // Nếu tự sửa thông tin của chính mình, cập nhật luôn bản sao lưu local
                 if (currentUser.id === id) {
                     const nextUser = { ...currentUser, ...updateData };
                     localStorage.setItem('proposal_app_user', JSON.stringify(nextUser));
                     currentUser = nextUser;
                     document.getElementById('user-display-name').innerText = nextUser.name;
                 }
-                
                 await loadAllUsers();
                 render();
             }
@@ -556,9 +548,17 @@
             const timeNow = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
             let updateFields = {};
-            if (action === 'confirm') updateFields = { status: "Đang xử lý" };
-            else if (action === 'complete') updateFields = { status: "Hoàn thành", completed_at: timeNow };
-            else if (action === 'incomplete') {
+            if (action === 'confirm') {
+                updateFields = { status: "Đang xử lý" };
+            } else if (action === 'complete') {
+                const imgLink = prompt("Nhập link ảnh nghiệm thu công việc (hoặc bấm OK để bỏ qua):");
+                // Nếu có điền link ảnh, lưu trực tiếp vào cột reason để hiển thị ngoài danh sách công việc đã xong
+                updateFields = { 
+                    status: "Hoàn thành", 
+                    completed_at: timeNow,
+                    reason: imgLink ? imgLink.trim() : ""
+                };
+            } else if (action === 'incomplete') {
                 const r = prompt("Nhập lý do hoãn/chưa xong:");
                 if (r && r.trim() !== "") updateFields = { status: "Đang xử lý", reason: r.trim() };
                 else return alert("Phải có lý do báo hoãn!");
@@ -589,7 +589,7 @@
             if(targetData.length === 0) return alert('Không có dữ liệu!');
             const raw = targetData.map((p, i) => ({
                 "STT": i + 1, "Nội Dung": p.title, "Hệ Thống": p.system, "Khoa/Phòng": p.dept, "Tầng": p.floor,
-                "Nhận Lúc": p.created_at, "Xong Lúc": p.completed_at || "Chưa", "Nhân Viên": p.staff_name || "Chưa", "Trạng Thái": p.status, "Tồn đọng": p.reason || ""
+                "Nhận Lúc": p.created_at, "Xong Lúc": p.completed_at || "Chưa", "Nhân Viên": p.staff_name || "Chưa", "Trạng Thái": p.status, "Ảnh nghiệm thu/Lý do hoãn": p.reason || ""
             }));
             const ws = XLSX.utils.json_to_sheet(raw); const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Báo cáo"); XLSX.writeFile(wb, `Bao_Cao_${start}_to_${end}.xlsx`);
@@ -618,14 +618,22 @@
                             <span class="bg-slate-200 text-gray-700 text-xs px-2 py-0.5 rounded-full font-bold">${list.length}</span>
                         </div>
                         <div class="space-y-2">
-                            ${list.map(p => `
-                                <div class="bg-white p-3 rounded-lg shadow-xs border-l-4 border-indigo-500 text-xs">
-                                    <span class="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-bold text-[10px]">${p.system}</span>
-                                    <p class="font-bold text-gray-800 mt-1">${p.title}</p>
-                                    <p class="text-gray-500 text-[11px]">📍 ${p.dept} (${p.floor})</p>
-                                    ${p.reason ? `<p class="mt-1 bg-red-50 text-red-700 p-1 rounded font-medium">⚠️ Hoãn: ${p.reason}</p>` : ''}
-                                </div>
-                            `).join('')}
+                            ${list.map(p => {
+                                let badgeHtml = '';
+                                if (p.status === 'Hoàn thành' && p.reason && (p.reason.startsWith('http://') || p.reason.startsWith('https://'))) {
+                                    badgeHtml = `<a href="${p.reason}" target="_blank" class="mt-1 inline-block bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-bold border border-emerald-200">👁️ Xem ảnh</a>`;
+                                } else if (p.reason) {
+                                    badgeHtml = `<p class="mt-1 bg-red-50 text-red-700 p-1 rounded font-medium">⚠️ Hoãn: ${p.reason}</p>`;
+                                }
+                                return `
+                                    <div class="bg-white p-3 rounded-lg shadow-xs border-l-4 border-indigo-500 text-xs">
+                                        <span class="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-bold text-[10px]">${p.system}</span>
+                                        <p class="font-bold text-gray-800 mt-1">${p.title}</p>
+                                        <p class="text-gray-500 text-[11px]">📍 ${p.dept} (${p.floor})</p>
+                                        ${badgeHtml}
+                                    </div>
+                                `;
+                            }).join('')}
                         </div>
                     </div>
                 `;
@@ -689,13 +697,20 @@
                     actionWidget = `<span class="font-semibold px-2 py-1 rounded block text-center text-[11px] ${p.status==='Hoàn thành'?'bg-green-100 text-green-800':p.status==='Đang xử lý'?'bg-indigo-100 text-indigo-800':'bg-yellow-100 text-yellow-800'}">${p.status}</span>`;
                 }
 
+                let reasonOrImgWidget = '';
+                if (p.status === 'Hoàn thành' && p.reason && (p.reason.startsWith('http://') || p.reason.startsWith('https://'))) {
+                    reasonOrImgWidget = `<br><a href="${p.reason}" target="_blank" class="mt-1 inline-block bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold border border-emerald-200 text-[10px]">👁️ Xem ảnh</a>`;
+                } else if (p.reason) {
+                    reasonOrImgWidget = `<span class="text-[10px] text-red-600 block mt-0.5 font-medium bg-red-50 p-0.5 rounded">Lý do: ${p.reason}</span>`;
+                }
+
                 desktopHtml += `
                     <tr class="hover:bg-gray-50 border-b">
                         <td class="py-3 px-4"><span class="font-bold text-gray-800 block">${p.title}</span><span class="text-[10px] text-indigo-700 font-semibold">${p.system}</span></td>
                         <td class="py-3 px-4"><span class="font-medium block">${p.dept}</span><span class="text-[10px] text-gray-400 block">${p.floor}</span></td>
                         <td class="py-3 px-4 text-gray-500 text-[11px]">📥 ${p.created_at} ${p.completed_at ? `<br><span class="text-green-600 font-medium">🏁 ${p.completed_at}</span>` : ''}</td>
                         <td class="py-3 px-4">${assignWidget}</td>
-                        <td class="py-3 px-4"><span>${p.status}</span>${p.reason ? `<span class="text-[10px] text-red-600 block mt-0.5 font-medium bg-red-50 p-0.5 rounded">Lý do: ${p.reason}</span>` : ''}</td>
+                        <td class="py-3 px-4"><span>${p.status}</span>${reasonOrImgWidget}</td>
                         <td class="py-3 px-4">${actionWidget}</td>
                         ${currentUser.role === 'admin' ? `<td class="py-3 px-4 text-center"><button onclick="deleteProposal(${p.id})" class="text-red-500 hover:text-red-700 font-bold">Xóa</button></td>` : ''}
                     </tr>
@@ -713,7 +728,7 @@
                         </div>
                         <div class="space-y-2">
                             <div class="flex items-center gap-2 justify-between"><span class="text-xs text-gray-400 font-medium">Nhân sự:</span><div class="w-full max-w-[160px]">${assignWidget}</div></div>
-                            ${p.reason ? `<div class="bg-red-50 p-2 rounded text-xs text-red-700 font-medium">⚠️ Hoãn: ${p.reason}</div>` : ''}
+                            ${p.status === 'Hoàn thành' && p.reason && (p.reason.startsWith('http://') || p.reason.startsWith('https://')) ? `<div class="mt-1"><a href="${p.reason}" target="_blank" class="bg-emerald-50 text-emerald-700 text-xs px-3 py-1 rounded font-bold border border-emerald-200 inline-block">👁️ Xem ảnh nghiệm thu</a></div>` : p.reason ? `<div class="bg-red-50 p-2 rounded text-xs text-red-700 font-medium">⚠️ Hoãn: ${p.reason}</div>` : ''}
                             <div class="pt-1">${actionWidget}</div>
                         </div>
                     </div>
