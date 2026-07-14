@@ -258,7 +258,6 @@
         const SUPABASE_URL = "https://ztnsmstxtgdysurnpcpn.supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_publishable_prkt5-F3meDr4hO-87x32g_icAptL6W";
         
-        // Khởi tạo client an toàn phòng tránh trùng lặp biến hằng số
         let supabaseClient = null;
         if (SUPABASE_URL && SUPABASE_ANON_KEY) {
             supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -269,13 +268,33 @@
         let currentUser = null;
         let chartInstances = { staff: null, system: null, dept: null };
 
-        // Tự động tải dữ liệu khi trang web được mở
+        // Tự động kiểm tra phiên làm việc cũ khi mở trang hoặc nhấn F5
         window.addEventListener('DOMContentLoaded', async () => {
             if (!supabaseClient) {
                 alert("Hệ thống chưa cấu hình API Supabase. Hãy điền mã cấu hình của bạn vào code!");
                 return;
             }
+            
+            // Tải dữ liệu người dùng trước
             await loadAllUsers();
+
+            // Kiểm tra trạng thái đăng nhập từ localStorage
+            const savedUserJson = localStorage.getItem('proposal_app_user');
+            if (savedUserJson) {
+                try {
+                    const savedUser = JSON.parse(savedUserJson);
+                    // Xác thực lại với danh sách người dùng mới nhất từ DB để đảm bảo mật khẩu/quyền chưa bị thay đổi công khai
+                    const verifiedUser = appUsers.find(u => u.username === savedUser.username && u.password === savedUser.password);
+                    
+                    if (verifiedUser) {
+                        currentUser = verifiedUser;
+                        executeLoginSuccessBehavior(verifiedUser);
+                        return; // Bỏ qua màn hình đăng nhập
+                    }
+                } catch (e) {
+                    localStorage.removeItem('proposal_app_user');
+                }
+            }
         });
 
         async function loadAllUsers() {
@@ -313,21 +332,28 @@
 
             if (user) {
                 currentUser = user;
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('main-app').classList.remove('hidden');
-                document.getElementById('user-display-name').innerText = user.name;
-                document.getElementById('role-badge').innerText = user.role==='admin'?'Admin':(user.role==='manager'?'Quản lý':'Nhân viên');
-                
-                applyUIPermissions();
-                await fetchDataFromSupabase();
-                switchTab(currentUser.role === 'staff' ? 'proposals' : 'dashboard');
+                // Lưu session vào LocalStorage để chống mất khi F5
+                localStorage.setItem('proposal_app_user', JSON.stringify(user));
+                executeLoginSuccessBehavior(user);
             } else {
                 alert('Tên đăng nhập hoặc mật khẩu không chính xác trên Hệ thống!');
             }
         }
 
+        function executeLoginSuccessBehavior(user) {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            document.getElementById('user-display-name').innerText = user.name;
+            document.getElementById('role-badge').innerText = user.role==='admin'?'Admin':(user.role==='manager'?'Quản lý':'Nhân viên');
+            
+            applyUIPermissions();
+            fetchDataFromSupabase();
+            switchTab(user.role === 'staff' ? 'proposals' : 'dashboard');
+        }
+
         function handleLogout() {
             currentUser = null;
+            localStorage.removeItem('proposal_app_user'); // Xóa phiên lưu trữ chống F5
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('main-app').classList.add('hidden');
             document.getElementById('login-username').value = '';
@@ -373,7 +399,6 @@
             const name = document.getElementById('u-fullname').value.trim();
             const role = document.getElementById('u-role').value;
 
-            // Kiểm tra trùng tài khoản trước
             const exist = appUsers.find(u => u.username === username);
             if (exist) {
                 alert('Tên đăng nhập này đã tồn tại trên Database!');
@@ -411,6 +436,15 @@
                 alert("Lỗi khi sửa tài khoản: " + error.message);
             } else {
                 alert("Đã cập nhật thông tin tài khoản thành công!");
+                
+                // Nếu tự sửa thông tin của chính mình, cập nhật luôn bản sao lưu local
+                if (currentUser.id === id) {
+                    const nextUser = { ...currentUser, ...updateData };
+                    localStorage.setItem('proposal_app_user', JSON.stringify(nextUser));
+                    currentUser = nextUser;
+                    document.getElementById('user-display-name').innerText = nextUser.name;
+                }
+                
                 await loadAllUsers();
                 render();
             }
@@ -428,8 +462,11 @@
                     alert("Lỗi khi xóa tài khoản: " + error.message);
                 } else {
                     alert("Đã xóa tài khoản thành công!");
-                    await loadAllUsers();
-                    render();
+                    if (currentUser.username === username) handleLogout();
+                    else {
+                        await loadAllUsers();
+                        render();
+                    }
                 }
             }
         }
@@ -604,7 +641,6 @@
                 excelContainer.style.display='block'; adminForm.style.display='block'; adminUserForm.style.display='block'; if(thActions) thActions.style.display='table-cell';
                 tableViewTitle.innerText = "📋 Quản Lý Danh Sách Đề Xuất Toàn Hệ Thống";
                 
-                // Hiển thị danh sách User với tính năng Sửa / Xóa cho Admin
                 document.getElementById('admin-users-list-view').innerHTML = appUsers.map(u => `
                     <div class="py-1 border-b flex justify-between items-center gap-1">
                         <div class="truncate">
