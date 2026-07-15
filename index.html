@@ -62,7 +62,10 @@
             </div>
             <div class="p-4 text-xs text-slate-400 border-t border-slate-800 bg-slate-950 flex flex-col gap-1">
                 <p>⚡ Quyền: <span id="role-badge" class="font-bold text-indigo-400">---</span></p>
-                <p>📅 Năm vận hành: 2026</p>
+                <div class="flex items-center justify-between">
+                    <span>📅 Năm: 2026</span>
+                    <span id="refresh-indicator" class="text-[10px] text-emerald-400 flex items-center gap-1">● Tự động cập nhật</span>
+                </div>
             </div>
         </div>
 
@@ -264,6 +267,7 @@
         let proposals = [];
         let currentUser = null;
         let chartInstances = { staff: null, system: null, dept: null };
+        let autoRefreshTimer = null; 
 
         window.addEventListener('DOMContentLoaded', async () => {
             if (!supabaseClient) {
@@ -271,7 +275,6 @@
                 return;
             }
             
-            // Khởi tạo các bộ lọc ngày mặc định là ngày hôm nay của hệ thống
             const today = new Date();
             const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
             if (document.getElementById('filter-start-date')) document.getElementById('filter-start-date').value = todayStr;
@@ -304,12 +307,58 @@
             if (!error && data) appUsers = data;
         }
 
+        // Cập nhật MỚI: Hàm kiểm tra và kích hoạt thông báo đẩy trên trình duyệt
+        function checkAndSendNotification(newProposals) {
+            if (!currentUser || currentUser.role !== 'staff') return;
+            if (Notification.permission !== "granted") return;
+
+            newProposals.forEach(newP => {
+                // Tìm xem trong danh sách cũ (proposals đang có sẵn trên RAM) đã tồn tại đề xuất này chưa
+                const oldP = proposals.find(p => p.id === newP.id);
+                
+                // Điều kiện thông báo: Đề xuất mới được phân cho tài khoản này và ở trạng thái "Chờ xác nhận"
+                // Hoặc đề xuất cũ trước đó chưa được giao cho ai/giao người khác, nay được đổi giao cho tài khoản này
+                const isAssignedToMe = (newP.staff_user === currentUser.username && newP.status === "Chờ xác nhận");
+                const isNewlyAssigned = !oldP || (oldP.staff_user !== currentUser.username);
+
+                if (isAssignedToMe && isNewlyAssigned) {
+                    new Notification("🏥 BẠN CÓ ĐỀ XUẤT MỚI!", {
+                        body: `Nội dung: ${newP.title}\nHệ thống: ${newP.system}\n📍 Nơi yêu cầu: ${newP.dept} (${newP.floor})`,
+                        icon: "https://cdn-icons-png.flaticon.com/512/564/564832.png" // Icon thông báo sửa chữa công việc
+                    });
+                }
+            });
+        }
+
         async function fetchDataFromSupabase() {
             if (!supabaseClient) return;
+            const indicator = document.getElementById('refresh-indicator');
+            if(indicator) indicator.innerText = "🔄 Đang đồng bộ...";
+            
             const { data, error } = await supabaseClient.from('proposals').select('*').order('id', { ascending: false });
             if (!error && data) {
+                // Kích hoạt tính năng kiểm tra thông báo trước khi ghi đè dữ liệu mới
+                checkAndSendNotification(data);
+                
                 proposals = data;
                 render();
+            }
+            if(indicator) indicator.innerText = "● Tự động cập nhật";
+        }
+
+        function startAutoRefresh() {
+            stopAutoRefresh(); 
+            autoRefreshTimer = setInterval(async () => {
+                if (currentUser) {
+                    await fetchDataFromSupabase();
+                }
+            }, 30000); 
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshTimer) {
+                clearInterval(autoRefreshTimer);
+                autoRefreshTimer = null;
             }
         }
 
@@ -346,14 +395,22 @@
             document.getElementById('user-display-name').innerText = user.name;
             document.getElementById('role-badge').innerText = user.role==='admin'?'Admin':(user.role==='manager'?'Quản lý':'Nhân viên');
             
+            // Yêu cầu quyền thông báo của Trình duyệt khi đăng nhập thành công
+            if ("Notification" in window) {
+                if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                    Notification.requestPermission();
+                }
+            }
+
             applyUIPermissions();
             fetchDataFromSupabase();
+            startAutoRefresh(); 
             
-            // Nhân viên chuyển đến Proposals, Admin/Manager chuyển đến Dashboard
             switchTab(user.role === 'staff' ? 'proposals' : 'dashboard');
         }
 
         function handleLogout() {
+            stopAutoRefresh(); 
             currentUser = null;
             localStorage.removeItem('proposal_app_user');
             document.getElementById('login-screen').classList.remove('hidden');
@@ -393,8 +450,7 @@
             if (currentUser.role === 'staff') {
                 btnDashboard.style.display = 'none'; 
                 btnStatistics.style.display = 'none';
-            } 
-            // Đã SỬA: Cho phép Manager hiển thị nút "Tiếp Nhận & Xử Lý" để họ có thể thực hiện phân công nhân sự
+            }
         }
 
         async function createUser(e) {
@@ -482,11 +538,9 @@
             render();
         }
 
-        // Đã SỬA: Hàm lọc ngày tháng động theo ngày hôm nay của máy chủ/hệ thống thay vì gán cứng 14/07/2026
         function isProposalInTimeRange(createdStr, range) {
             if (!createdStr) return false;
             
-            // Xử lý cả định dạng ISO (chứa chữ T) và định dạng khoảng trắng tự tạo
             const datePart = createdStr.includes('T') ? createdStr.split('T')[0] : createdStr.split(' ')[0];
             const pDate = new Date(datePart);
             const today = new Date();
@@ -514,7 +568,6 @@
 
         function switchTab(tabName) {
             if (currentUser.role === 'staff' && (tabName === 'dashboard' || tabName === 'statistics')) return;
-            // Đã SỬA: Cho phép Manager chuyển đổi và truy cập vào Tab 'proposals' để tiến hành phân công việc
             
             ['dashboard', 'proposals', 'statistics'].forEach(t => {
                 document.getElementById(`tab-${t}`).classList.add('hidden');
@@ -539,7 +592,6 @@
             const dept = document.getElementById('p-dept').value.trim();
             const floor = document.getElementById('p-floor').value;
 
-            // Đã SỬA: Chuyển sang sử dụng định dạng ISO chuẩn của Database để đảm bảo lưu trữ và lọc đồng nhất
             const now = new Date();
             const dateStr = now.toISOString();
 
@@ -682,7 +734,6 @@
                     </div>
                 `).join('');
             } else if (currentUser.role === 'manager') {
-                // Đã SỬA: Cho phép hiển thị nút thao tác cho quản lý để gán việc
                 excelContainer.style.display='block'; adminForm.style.display='none'; adminUserForm.style.display='none'; if(thActions) thActions.style.display='table-cell';
                 tableViewTitle.innerText = "📋 Danh Sách Đề Xuất Điều Phối";
             } else {
