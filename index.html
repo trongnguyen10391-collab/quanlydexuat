@@ -27,7 +27,6 @@
 
     <div id="toast-container" class="fixed bottom-4 left-4 right-4 sm:top-4 sm:bottom-auto sm:left-auto sm:right-4 z-50 space-y-2 pointer-events-none"></div>
 
-    <!-- Màn hình Đăng Nhập Tối Ưu Mobile (Thêm cuộn nếu bàn phím ảo đẩy lên) -->
     <div id="login-screen" class="fixed inset-0 bg-slate-900 flex items-center justify-center z-50 p-4 overflow-y-auto">
         <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl w-full max-w-md my-auto border border-gray-100">
             <div class="text-center mb-6">
@@ -49,10 +48,8 @@
         </div>
     </div>
 
-    <!-- Ứng dụng chính -->
     <div id="main-app" class="hidden flex h-screen overflow-hidden relative">
         
-        <!-- Thanh Sidebar Menu -->
         <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col justify-between z-40 transform -translate-x-full lg:translate-x-0 lg:static lg:h-screen transition-transform duration-300 ease-in-out">
             <div class="p-5 flex flex-col flex-1 overflow-y-auto custom-scrollbar">
                 <div class="flex items-center justify-between mb-6">
@@ -87,7 +84,6 @@
 
         <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-30 hidden lg:hidden backdrop-blur-xs"></div>
 
-        <!-- Vùng nội dung bên phải -->
         <div class="flex-1 flex flex-col overflow-y-auto min-w-0 bg-gray-50">
             <header class="bg-white shadow-xs px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b sticky top-0 z-20">
                 <div class="flex items-center gap-3">
@@ -117,7 +113,6 @@
                     <p><b>YÊU CẦU:</b> Nhân sự chụp/tải ảnh nghiệm thu hiện trường thực tế trước khi bấm nút "Hoàn thành" để đồng bộ dữ liệu lên đám mây.</p>
                 </div>
 
-                <!-- Tab: Bảng Điều Khiển -->
                 <div id="tab-dashboard" class="space-y-5">
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 border-b-4 border-blue-500">
@@ -144,7 +139,6 @@
                     </div>
                 </div>
 
-                <!-- Tab: Tiếp Nhận & Xử Lý -->
                 <div id="tab-proposals" class="space-y-5 hidden">
                     <div id="excel-export-container" class="bg-white p-4 rounded-xl shadow-xs border border-blue-100">
                         <h3 class="text-xs font-bold text-blue-900 mb-2.5 flex items-center gap-2">📊 BÁO CÁO VÀ XUẤT FILE EXCEL</h3>
@@ -220,11 +214,9 @@
                         </div>
                     </div>
 
-                    <!-- Khu vực danh sách thẻ / Bảng hiển thị -->
                     <div class="bg-white rounded-xl shadow-xs overflow-hidden border border-gray-200">
                         <div class="p-4 border-b bg-gray-50"><h3 id="table-view-title" class="text-sm font-bold text-gray-700">📋 Danh Sách Đề Xuất</h3></div>
                         
-                        <!-- Màn hình máy tính: Table View -->
                         <div class="hidden lg:block overflow-x-auto">
                             <table class="w-full text-left border-collapse">
                                 <thead>
@@ -242,12 +234,10 @@
                             </table>
                         </div>
 
-                        <!-- Màn hình Điện thoại: Card layout tối ưu chạm ngón tay -->
                         <div id="proposal-mobile-cards" class="block lg:hidden divide-y divide-gray-100 bg-gray-50/50 p-2 space-y-2"></div>
                     </div>
                 </div>
 
-                <!-- Tab: Thống Kê -->
                 <div id="tab-statistics" class="hidden space-y-5">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="bg-white p-4 sm:p-5 rounded-xl shadow-xs border md:col-span-2">
@@ -298,6 +288,7 @@
         let proposals = [];
         let currentUser = null;
         let chartInstances = { staff: null, system: null, dept: null };
+        let temporaryCapturedPhotos = {}; // Biến toàn cục để lưu trữ ảnh tạm thời trên mobile
 
         window.addEventListener('DOMContentLoaded', async () => {
             if (!supabaseClient) {
@@ -605,6 +596,32 @@
             else await fetchDataFromSupabase();
         }
 
+        // HÀM MỚI: Xử lý đọc file ảnh chuyển thành Base64 ngay khi chụp xong để không lo bị xoá RAM
+        function handlePhotoCaptured(id, inputElement) {
+            if (!inputElement.files || inputElement.files.length === 0) return;
+            
+            const file = inputElement.files[0];
+            const previewDiv = document.getElementById(`photo-preview-${id}`);
+            if (previewDiv) previewDiv.innerHTML = '<span class="text-amber-500 font-bold">⏳ Đang đọc file ảnh từ Camera...</span>';
+
+            const reader = new FileReader();
+            reader.onload = function(eEvent) {
+                // Lưu thông tin ảnh đã mã hoá vào biến cục bộ
+                temporaryCapturedPhotos[id] = {
+                    base64: eEvent.target.result.split(',')[1],
+                    mimeType: file.type,
+                    fileName: `Anh_NghiemThu_${id}_${Date.now()}.jpg`
+                };
+                if (previewDiv) {
+                    previewDiv.innerHTML = `<span class="text-green-600 font-bold">✅ Ảnh đã sẵn sàng (${(file.size/1024/1024).toFixed(2)} MB). Hãy bấm Hoàn Thành!</span>`;
+                }
+            };
+            reader.onerror = function() {
+                if (previewDiv) previewDiv.innerHTML = '<span class="text-red-600 font-bold">❌ Lỗi không thể đọc tệp tin hình ảnh.</span>';
+            };
+            reader.readAsDataURL(file);
+        }
+
         // TỐI ƯU HÀM XỬ LÝ ẢNH & ĐỒNG BỘ ĐIỆN THOẠI KHÔNG BỊ TREO
         async function staffAction(id, action) {
             if (!supabaseClient) return;
@@ -627,13 +644,13 @@
                 }
             } 
             else if (action === 'complete') {
-                const fileInput = document.getElementById(`file-upload-${id}`);
-                if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                // Thay vì lấy trực tiếp từ fileInput.files, chúng ta lấy từ bộ nhớ tạm toàn cục
+                const capturedData = temporaryCapturedPhotos[id];
+                if (!capturedData) {
                     alert("⚠️ BẮT BUỘC: Hãy chụp ảnh nghiệm thu bằng camera trước!");
                     return;
                 }
 
-                const file = fileInput.files[0];
                 const btnComplete = document.getElementById(`btn-comp-${id}`);
                 const btnIncomplete = document.getElementById(`btn-inc-${id}`);
                 
@@ -641,58 +658,47 @@
                 if (btnComplete) { btnComplete.innerText = "⏳ Đang tải lên Drive..."; btnComplete.disabled = true; }
                 if (btnIncomplete) btnIncomplete.disabled = true;
 
-                const reader = new FileReader();
-                reader.onload = async function(eEvent) {
-                    try {
-                        const base64String = eEvent.target.result.split(',')[1];
-                        
-                        // Đăng dữ liệu qua Google Apps Script Web App
-                        const response = await fetch(GOOGLE_SCRIPT_URL, {
-                            method: 'POST',
-                            mode: 'cors',
-                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                            body: JSON.stringify({
-                                base64: base64String,
-                                mimeType: file.type,
-                                fileName: `Anh_NghiemThu_${id}_${Date.now()}.jpg`
-                            })
-                        });
-                        
-                        if (!response.ok) throw new Error("Google Script trả về lỗi mạng!");
+                try {
+                    // Đăng dữ liệu qua Google Apps Script Web App sử dụng dữ liệu từ bộ nhớ tạm
+                    const response = await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'cors',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({
+                            base64: capturedData.base64,
+                            mimeType: capturedData.mimeType,
+                            fileName: capturedData.fileName
+                        })
+                    });
+                    
+                    if (!response.ok) throw new Error("Google Script trả về lỗi mạng!");
 
-                        const result = await response.json();
-                        
-                        if (result && (result.status === "success" || result.url)) {
-                            // Cập nhật lên cơ sở dữ liệu Supabase
-                            const { error } = await supabaseClient.from('proposals').update({ 
-                                status: "Hoàn thành", 
-                                completed_at: timeNow, 
-                                reason: "",
-                                image_url: result.url
-                            }).eq('id', id);
+                    const result = await response.json();
+                    
+                    if (result && (result.status === "success" || result.url)) {
+                        // Cập nhật lên cơ sở dữ liệu Supabase
+                        const { error } = await supabaseClient.from('proposals').update({ 
+                            status: "Hoàn thành", 
+                            completed_at: timeNow, 
+                            reason: "",
+                            image_url: result.url
+                        }).eq('id', id);
 
-                            if (error) {
-                                alert("Ảnh đã lên Drive nhưng lỗi lưu Supabase: " + error.message);
-                            } else {
-                                alert("✅ Thành công! Đã nghiệm thu và đồng bộ ảnh Drive.");
-                            }
+                        if (error) {
+                            alert("Ảnh đã lên Drive nhưng lỗi lưu Supabase: " + error.message);
                         } else {
-                            alert("❌ Drive từ chối lưu: " + (result.message || "Lỗi cấu hình script"));
+                            alert("✅ Thành công! Đã nghiệm thu và đồng bộ ảnh Drive.");
+                            delete temporaryCapturedPhotos[id]; // Xoá sạch ảnh tạm của đề xuất này sau khi thành công
                         }
-                    } catch (err) {
-                        alert("❌ Đường truyền gián đoạn: " + err.message);
-                    } finally {
-                        // Bắt buộc tải lại dữ liệu để đồng bộ lại giao diện điện thoại
-                        await fetchDataFromSupabase();
+                    } else {
+                        alert("❌ Drive từ chối lưu: " + (result.message || "Lỗi cấu hình script"));
                     }
-                };
-                
-                reader.onerror = function() {
-                    alert("Không thể đọc tệp tin hình ảnh từ Camera điện thoại.");
-                    if (btnComplete) { btnComplete.innerText = "Hoàn Thành"; btnComplete.disabled = false; }
-                    if (btnIncomplete) btnIncomplete.disabled = false;
-                };
-                reader.readAsDataURL(file);
+                } catch (err) {
+                    alert("❌ Đường truyền gián đoạn: " + err.message);
+                } finally {
+                    // Bắt buộc tải lại dữ liệu để đồng bộ lại giao diện điện thoại
+                    await fetchDataFromSupabase();
+                }
             }
         }
 
@@ -826,7 +832,12 @@
                         actionWidget = `
                             <div class="space-y-2.5 bg-indigo-50/50 p-2.5 rounded-xl border border-indigo-200">
                                 <label class="block text-[10px] font-black text-indigo-800 uppercase tracking-wide">📷 Chụp ảnh hiện trường nghiệm thu:</label>
-                                <input type="file" id="file-upload-${p.id}" accept="image/*" capture="environment" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer"/>
+                                <input type="file" id="file-upload-${p.id}" accept="image/*" capture="environment" onchange="handlePhotoCaptured(${p.id}, this)" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer"/>
+                                
+                                <div id="photo-preview-${p.id}" class="text-[11px] font-bold text-gray-500">
+                                    ${temporaryCapturedPhotos[p.id] ? '<span class="text-green-600">✅ Đã lưu ảnh tạm thời! Có thể bấm Hoàn Thành.</span>' : '❌ Chưa có ảnh'}
+                                </div>
+
                                 <div class="flex gap-2">
                                     <button id="btn-comp-${p.id}" onclick="staffAction(${p.id}, 'complete')" class="flex-1 bg-green-600 text-white font-bold py-2 rounded-lg text-xs hover:bg-green-700 transition active:scale-[0.96]">Hoàn Thành</button>
                                     <button id="btn-inc-${p.id}" onclick="staffAction(${p.id}, 'incomplete')" class="bg-amber-500 text-white font-bold py-2 px-3 rounded-lg text-xs hover:bg-amber-600 transition active:scale-[0.96]">Hoãn</button>
