@@ -86,9 +86,9 @@
                     </select>
                     
                     <div id="custom-date-container" class="hidden flex flex-wrap items-center gap-1.5 pl-2 border-t sm:border-t-0 sm:border-l border-gray-200 pt-1.5 sm:pt-0 w-full sm:w-auto">
-                        <input type="date" id="filter-start-date" onchange="fetchDataFromSupabase()" class="border rounded px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-indigo-500 max-w-[120px]" value="2026-07-14">
+                        <input type="date" id="filter-start-date" onchange="fetchDataFromSupabase()" class="border rounded px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-indigo-500 max-w-[120px]">
                         <span class="text-xs text-gray-400">đến</span>
-                        <input type="date" id="filter-end-date" onchange="fetchDataFromSupabase()" class="border rounded px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-indigo-500 max-w-[120px]" value="2026-07-14">
+                        <input type="date" id="filter-end-date" onchange="fetchDataFromSupabase()" class="border rounded px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-indigo-500 max-w-[120px]">
                     </div>
                 </div>
             </header>
@@ -131,11 +131,11 @@
                         <div class="flex flex-wrap items-end gap-3">
                             <div class="w-5/12 sm:w-auto">
                                 <label class="block text-[10px] font-bold text-gray-600 mb-1">Từ ngày</label>
-                                <input type="date" id="excel-start-date" class="w-full border rounded-lg px-2.5 py-1.5 text-xs sm:text-sm" value="2026-07-14">
+                                <input type="date" id="excel-start-date" class="w-full border rounded-lg px-2.5 py-1.5 text-xs sm:text-sm">
                             </div>
                             <div class="w-5/12 sm:w-auto">
                                 <label class="block text-[10px] font-bold text-gray-600 mb-1">Đến ngày</label>
-                                <input type="date" id="excel-end-date" class="w-full border rounded-lg px-2.5 py-1.5 text-xs sm:text-sm" value="2026-07-14">
+                                <input type="date" id="excel-end-date" class="w-full border rounded-lg px-2.5 py-1.5 text-xs sm:text-sm">
                             </div>
                             <button onclick="exportToExcel()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 text-xs sm:text-sm transition shadow-sm mt-2 sm:mt-0">
                                 📥 Tải Excel (.xlsx)
@@ -281,6 +281,13 @@
                 return;
             }
             
+            // Tự động gán ngày hiện tại cho các bộ lọc ngày đầu vào HTML
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('filter-start-date').value = todayStr;
+            document.getElementById('filter-end-date').value = todayStr;
+            document.getElementById('excel-start-date').value = todayStr;
+            document.getElementById('excel-end-date').value = todayStr;
+
             await loadAllUsers();
 
             const savedUserJson = localStorage.getItem('proposal_app_user');
@@ -349,7 +356,7 @@
             document.getElementById('role-badge').innerText = user.role==='admin'?'Admin':(user.role==='manager'?'Quản lý':'Nhân viên');
             
             applyUIPermissions();
-            fetchDataFromSupabase(); // Sửa lỗi quan trọng: Gọi lấy dữ liệu ngay khi vừa login thành công hoặc load từ session cũ
+            fetchDataFromSupabase();
             switchTab(user.role === 'staff' ? 'proposals' : 'dashboard');
         }
 
@@ -485,8 +492,10 @@
 
         function isProposalInTimeRange(createdStr, range) {
             const pDate = new Date(createdStr.split(' ')[0]);
-            const today = new Date("2026-07-14");
-            if (range === 'today') return createdStr.startsWith("2026-07-14");
+            const today = new Date(); // Lấy ngày thực tế từ trình duyệt thiết bị
+            const todayStr = today.toISOString().split('T')[0];
+
+            if (range === 'today') return createdStr.startsWith(todayStr);
             if (range === 'week') return Math.ceil(Math.abs(today - pDate) / (1000 * 60 * 60 * 24)) <= 7 && pDate <= today;
             if (range === 'month') return pDate.getMonth() === today.getMonth() && pDate.getFullYear() === today.getFullYear();
             if (range === 'custom') {
