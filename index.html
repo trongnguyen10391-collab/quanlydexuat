@@ -77,16 +77,16 @@
                 
                 <div class="flex flex-wrap items-center gap-2 bg-gray-50 p-1.5 rounded-xl border w-full sm:w-auto">
                     <select id="time-range-filter" onchange="toggleCustomDateInputs()" class="border-0 bg-transparent text-xs sm:text-sm font-medium focus:ring-0 text-gray-700 cursor-pointer w-full sm:w-auto py-1">
+                        <option value="month" selected>Tháng này</option>
                         <option value="today">Hôm nay</option>
                         <option value="week">Tuần này</option>
-                        <option value="month">Tháng này</option>
                         <option value="custom">Khoảng thời gian tự chọn 📅</option>
                     </select>
                     
                     <div id="custom-date-container" class="hidden flex flex-wrap items-center gap-1.5 pl-2 border-t sm:border-t-0 sm:border-l border-gray-200 pt-1.5 sm:pt-0 w-full sm:w-auto">
-                        <input type="date" id="filter-start-date" onchange="fetchDataFromSupabase()" class="border rounded px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-indigo-500 max-w-[120px]" value="2026-07-14">
+                        <input type="date" id="filter-start-date" onchange="fetchDataFromSupabase()" class="border rounded px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-indigo-500 max-w-[120px]" value="">
                         <span class="text-xs text-gray-400">đến</span>
-                        <input type="date" id="filter-end-date" onchange="fetchDataFromSupabase()" class="border rounded px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-indigo-500 max-w-[120px]" value="2026-07-14">
+                        <input type="date" id="filter-end-date" onchange="fetchDataFromSupabase()" class="border rounded px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-indigo-500 max-w-[120px]" value="">
                     </div>
                 </div>
             </header>
@@ -124,11 +124,11 @@
                         <div class="flex flex-wrap items-end gap-3">
                             <div class="w-5/12 sm:w-auto">
                                 <label class="block text-[10px] font-bold text-gray-600 mb-1">Từ ngày</label>
-                                <input type="date" id="excel-start-date" class="w-full border rounded-lg px-2.5 py-1.5 text-xs sm:text-sm" value="2026-07-14">
+                                <input type="date" id="excel-start-date" class="w-full border rounded-lg px-2.5 py-1.5 text-xs sm:text-sm" value="">
                             </div>
                             <div class="w-5/12 sm:w-auto">
                                 <label class="block text-[10px] font-bold text-gray-600 mb-1">Đến ngày</label>
-                                <input type="date" id="excel-end-date" class="w-full border rounded-lg px-2.5 py-1.5 text-xs sm:text-sm" value="2026-07-14">
+                                <input type="date" id="excel-end-date" class="w-full border rounded-lg px-2.5 py-1.5 text-xs sm:text-sm" value="">
                             </div>
                             <button onclick="exportToExcel()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 text-xs sm:text-sm transition shadow-sm mt-2 sm:mt-0">
                                 📥 Tải Excel (.xlsx)
@@ -270,6 +270,19 @@
                 alert("Hệ thống chưa cấu hình API Supabase. Hãy điền mã cấu hình của bạn vào code!");
                 return;
             }
+
+            // Đồng bộ hoá thời gian thực tế của hệ thống
+            const todayObj = new Date();
+            const yyyy = todayObj.getFullYear();
+            const mm = String(todayObj.getMonth() + 1).padStart(2, '0');
+            const dd = String(todayObj.getDate()).padStart(2, '0');
+            const currentDateStr = `${yyyy}-${mm}-${dd}`;
+
+            // Gán giá trị ngày mặc định động cho các input HTML khi khởi tạo
+            document.getElementById('filter-start-date').value = currentDateStr;
+            document.getElementById('filter-end-date').value = currentDateStr;
+            document.getElementById('excel-start-date').value = currentDateStr;
+            document.getElementById('excel-end-date').value = currentDateStr;
             
             await loadAllUsers();
 
@@ -375,16 +388,12 @@
             const btnDashboard = document.getElementById('btn-dashboard');
             const btnProposals = document.getElementById('btn-proposals');
             const btnStatistics = document.getElementById('btn-statistics');
-            
-            btnDashboard.style.display = 'block'; 
-            btnProposals.style.display = 'block'; 
-            btnStatistics.style.display = 'block';
-            
+            btnDashboard.style.display = 'block'; btnProposals.style.display = 'block'; btnStatistics.style.display = 'block';
             if (currentUser.role === 'staff') {
-                btnDashboard.style.display = 'none'; 
-                btnStatistics.style.display = 'none';
+                btnDashboard.style.display = 'none'; btnStatistics.style.display = 'none';
+            } else if (currentUser.role === 'manager') {
+                btnProposals.style.display = 'none';
             }
-            // Loại bỏ khối logic chặn xem tab proposals cũ của manager để tránh lỗi phân quyền chéo
         }
 
         async function createUser(e) {
@@ -474,22 +483,48 @@
 
         function isProposalInTimeRange(createdStr, range) {
             if (!createdStr) return false;
-            const pDate = new Date(createdStr.split(' ')[0]);
-            const today = new Date("2026-07-14");
-            if (range === 'today') return createdStr.startsWith("2026-07-14");
-            if (range === 'week') return Math.ceil(Math.abs(today - pDate) / (1000 * 60 * 60 * 24)) <= 7 && pDate <= today;
-            if (range === 'month') return pDate.getMonth() === today.getMonth() && pDate.getFullYear() === today.getFullYear();
+            
+            const pDatePart = createdStr.split(' ')[0];
+            const pDate = new Date(pDatePart);
+            const today = new Date();
+            
+            today.setHours(0,0,0,0);
+            pDate.setHours(0,0,0,0);
+
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const currentDateStr = `${yyyy}-${mm}-${dd}`;
+
+            if (range === 'today') {
+                return pDatePart === currentDateStr;
+            }
+            if (range === 'week') {
+                const diffTime = today - pDate;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays >= 0 && diffDays <= 7;
+            }
+            if (range === 'month') {
+                return pDate.getMonth() === today.getMonth() && pDate.getFullYear() === today.getFullYear();
+            }
             if (range === 'custom') {
                 const start = document.getElementById('filter-start-date').value;
                 const end = document.getElementById('filter-end-date').value;
                 if (!start || !end) return true;
-                return pDate >= new Date(start) && pDate <= new Date(end + "T23:59:59");
+                
+                const startDate = new Date(start);
+                const endDate = new Date(end);
+                startDate.setHours(0,0,0,0);
+                endDate.setHours(0,0,0,0);
+                
+                return pDate >= startDate && pDate <= endDate;
             }
             return false;
         }
 
         function switchTab(tabName) {
             if (currentUser.role === 'staff' && (tabName === 'dashboard' || tabName === 'statistics')) return;
+            if (currentUser.role === 'manager' && tabName === 'proposals') return;
 
             ['dashboard', 'proposals', 'statistics'].forEach(t => {
                 document.getElementById(`tab-${t}`).classList.add('hidden');
@@ -649,10 +684,10 @@
                     </div>
                 `).join('');
             } else if (currentUser.role === 'manager') {
-                excelContainer.style.display='block'; adminForm.style.display='none'; adminUserForm.style.display='none'; if(thActions) thActions.style.display='table-cell';
+                excelContainer.style.display='block'; adminForm.style.display='none'; adminUserForm.style.display='none'; if(thActions) thActions.style.display='none';
                 tableViewTitle.innerText = "📋 Danh Sách Đề Xuất Điều Phối";
             } else {
-                excelContainer.style.display='none'; adminForm.style.display='none'; adminUserForm.style.display='none'; if(thActions) thActions.style.display='table-cell'; // Thay 'none' thành 'table-cell' để không lỗi layout
+                excelContainer.style.display='none'; adminForm.style.display='none'; adminUserForm.style.display='none'; if(thActions) thActions.style.display='none';
                 tableViewTitle.innerText = "📋 Công Việc Được Giao Cho Bạn";
             }
 
@@ -697,7 +732,7 @@
                         <td class="py-3 px-4">${assignWidget}</td>
                         <td class="py-3 px-4"><span>${p.status}</span>${reasonWidget}</td>
                         <td class="py-3 px-4">${actionWidget}</td>
-                        ${currentUser.role === 'admin' ? `<td class="py-3 px-4 text-center"><button onclick="deleteProposal(${p.id})" class="text-red-500 hover:text-red-700 font-bold">Xóa</button></td>` : `<td class="py-3 px-4 text-center text-gray-300">-</td>`}
+                        ${currentUser.role === 'admin' ? `<td class="py-3 px-4 text-center"><button onclick="deleteProposal(${p.id})" class="text-red-500 hover:text-red-700 font-bold">Xóa</button></td>` : ''}
                     </tr>
                 `;
 
