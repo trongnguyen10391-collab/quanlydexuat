@@ -26,7 +26,6 @@
 
     <div id="toast-container" class="fixed bottom-4 left-4 right-4 sm:top-4 sm:bottom-auto sm:left-auto sm:right-4 z-50 space-y-2 pointer-events-none"></div>
 
-    <!-- Màn hình Đăng Nhập -->
     <div id="login-screen" class="fixed inset-0 bg-slate-900 flex items-center justify-center z-50 p-4 overflow-y-auto">
         <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl w-full max-w-md my-auto border border-gray-100">
             <div class="text-center mb-6">
@@ -48,10 +47,8 @@
         </div>
     </div>
 
-    <!-- Ứng dụng chính -->
     <div id="main-app" class="hidden flex h-screen overflow-hidden relative">
         
-        <!-- Thanh Sidebar Menu -->
         <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col justify-between z-40 transform -translate-x-full lg:translate-x-0 lg:static lg:h-screen transition-transform duration-300 ease-in-out">
             <div class="p-5 flex flex-col flex-1 overflow-y-auto custom-scrollbar">
                 <div class="flex items-center justify-between mb-6">
@@ -86,7 +83,6 @@
 
         <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-30 hidden lg:hidden backdrop-blur-xs"></div>
 
-        <!-- Vùng nội dung bên phải -->
         <div class="flex-1 flex flex-col overflow-y-auto min-w-0 bg-gray-50">
             <header class="bg-white shadow-xs px-4 py-3 flex items-center justify-between border-b sticky top-0 z-20">
                 <div class="flex items-center gap-3">
@@ -101,7 +97,6 @@
                     <p><b>DANH SÁCH CÔNG VIỆC:</b> Dưới đây là các công việc được giao riêng cho bạn và chưa hoàn thành. Bạn có thể chụp thêm ảnh hiện trường nghiệm thu nếu cần, sau đó bấm "Hoàn thành".</p>
                 </div>
 
-                <!-- Tab: Bảng Điều Khiển -->
                 <div id="tab-dashboard" class="space-y-5">
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 border-b-4 border-blue-500">
@@ -128,7 +123,6 @@
                     </div>
                 </div>
 
-                <!-- Tab: Tiếp Nhận & Xử Lý -->
                 <div id="tab-proposals" class="space-y-5 hidden">
                     <div id="excel-export-container" class="bg-white p-4 rounded-xl shadow-xs border border-blue-100">
                         <h3 class="text-xs font-bold text-blue-900 mb-2.5 flex items-center gap-2">📊 BÁO CÁO VÀ XUẤT FILE EXCEL</h3>
@@ -204,11 +198,9 @@
                         </div>
                     </div>
 
-                    <!-- Khu vực danh sách thẻ / Bảng hiển thị -->
                     <div class="bg-white rounded-xl shadow-xs overflow-hidden border border-gray-200">
                         <div class="p-4 border-b bg-gray-50"><h3 id="table-view-title" class="text-sm font-bold text-gray-700">📋 Danh Sách Đề Xuất</h3></div>
                         
-                        <!-- Màn hình máy tính: Table View -->
                         <div class="hidden lg:block overflow-x-auto">
                             <table class="w-full text-left border-collapse">
                                 <thead>
@@ -226,12 +218,10 @@
                             </table>
                         </div>
 
-                        <!-- Màn hình Điện thoại: Card layout -->
                         <div id="proposal-mobile-cards" class="block lg:hidden divide-y divide-gray-100 bg-gray-50/50 p-2 space-y-2"></div>
                     </div>
                 </div>
 
-                <!-- Tab: Thống Kê -->
                 <div id="tab-statistics" class="hidden space-y-5">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="bg-white p-4 sm:p-5 rounded-xl shadow-xs border md:col-span-2">
@@ -311,6 +301,21 @@
                 }
             }
         });
+
+        // Hàm hỗ trợ lấy chuỗi ngày dạng YYYY-MM-DD từ mọi nguồn thời gian (ISO Supabase hoặc chuỗi tự tạo)
+        function getLocalDateString(dateStr) {
+            if (!dateStr) return "";
+            if (dateStr.includes('T')) {
+                const localDate = new Date(dateStr);
+                if (!isNaN(localDate.getTime())) {
+                    const year = localDate.getFullYear();
+                    const month = String(localDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(localDate.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                }
+            }
+            return dateStr.slice(0, 10);
+        }
 
         async function loadAllUsers() {
             if (!supabaseClient) return;
@@ -603,7 +608,6 @@
 
                 let driveUrl = "";
 
-                // Chỉ thực hiện tải lên Google Drive nếu người dùng có chọn ảnh
                 if (capturedData) {
                     try {
                         const response = await fetch(GOOGLE_SCRIPT_URL, {
@@ -630,7 +634,6 @@
                     }
                 }
 
-                // Cập nhật lên Supabase (Có link ảnh hoặc không có link ảnh tùy thuộc vào việc chụp ảnh)
                 try {
                     const { error } = await supabaseClient.from('proposals').update({ 
                         status: "Hoàn thành", 
@@ -667,7 +670,7 @@
             const end = document.getElementById('excel-end-date').value;
             if (!start || !end) return alert('Hãy nhập thời gian!');
             const targetData = proposals.filter(p => {
-                const pd = p.created_at.split(' ')[0];
+                const pd = getLocalDateString(p.created_at);
                 return pd >= start && pd <= end;
             });
             if(targetData.length === 0) return alert('Không có dữ liệu!');
