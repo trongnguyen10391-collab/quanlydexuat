@@ -271,14 +271,12 @@
                 return;
             }
 
-            // Đồng bộ hoá thời gian thực tế của hệ thống
             const todayObj = new Date();
             const yyyy = todayObj.getFullYear();
             const mm = String(todayObj.getMonth() + 1).padStart(2, '0');
             const dd = String(todayObj.getDate()).padStart(2, '0');
             const currentDateStr = `${yyyy}-${mm}-${dd}`;
 
-            // Gán giá trị ngày mặc định động cho các input HTML khi khởi tạo
             document.getElementById('filter-start-date').value = currentDateStr;
             document.getElementById('filter-end-date').value = currentDateStr;
             document.getElementById('excel-start-date').value = currentDateStr;
@@ -628,8 +626,11 @@
             const timeRange = document.getElementById('time-range-filter').value;
             let timeFiltered = proposals.filter(p => isProposalInTimeRange(p.created_at, timeRange));
 
+            // Logic lọc cho màn hình Kanban Dashboard
             let kanbanData = [...timeFiltered];
-            if (currentUser.role === 'staff') kanbanData = timeFiltered.filter(p => p.staff_user === currentUser.username);
+            if (currentUser.role === 'staff') {
+                kanbanData = timeFiltered.filter(p => p.staff_user === currentUser.username && p.status !== "Hoàn thành");
+            }
 
             document.getElementById('kpi-total').innerText = kanbanData.length;
             document.getElementById('kpi-pending').innerText = kanbanData.filter(p => p.status === "Chờ xác nhận").length;
@@ -688,7 +689,7 @@
                 tableViewTitle.innerText = "📋 Danh Sách Đề Xuất Điều Phối";
             } else {
                 excelContainer.style.display='none'; adminForm.style.display='none'; adminUserForm.style.display='none'; if(thActions) thActions.style.display='none';
-                tableViewTitle.innerText = "📋 Công Việc Được Giao Cho Bạn";
+                tableViewTitle.innerText = "📋 Công Việc Được Giao Cho Bạn (Chưa xong)";
             }
 
             const tableBody = document.getElementById('proposal-table-body');
@@ -698,7 +699,14 @@
             let desktopHtml = ''; let mobileHtml = '';
 
             timeFiltered.forEach(p => {
-                if (currentUser.role === 'staff' && p.staff_user !== currentUser.username) return;
+                // Kiểm tra phân quyền lọc cho nhân viên tại bảng danh sách đề xuất
+                if (currentUser.role === 'staff') {
+                    // Chỉ hiển thị đề xuất được phân công cho mình & chưa hoàn thành
+                    if (p.staff_user !== currentUser.username || p.status === "Hoàn thành") {
+                        return; 
+                    }
+                }
+
                 let assignWidget = '';
                 if (currentUser.role === 'admin' || currentUser.role === 'manager') {
                     assignWidget = `<select onchange="assignStaff(${p.id}, this.value)" class="border text-xs rounded p-1 bg-white w-full">`;
@@ -714,7 +722,7 @@
                     if (p.status === 'Chờ xác nhận') actionWidget = `<button onclick="staffAction(${p.id}, 'confirm')" class="w-full bg-blue-600 text-white font-bold px-3 py-1.5 rounded text-xs hover:bg-blue-700">Nhận Việc</button>`;
                     else if (p.status === 'Đang xử lý') {
                         actionWidget = `<div class="flex gap-1.5 w-full"><button onclick="staffAction(${p.id}, 'complete')" class="flex-1 bg-green-600 text-white font-bold py-1.5 rounded text-xs hover:bg-green-700">Xong</button><button onclick="staffAction(${p.id}, 'incomplete')" class="flex-1 bg-amber-500 text-white font-bold py-1.5 rounded text-xs hover:bg-amber-600">Hoãn</button></div>`;
-                    } else actionWidget = `<span class="text-green-600 font-bold block text-center bg-green-50 py-1 rounded">✅ Hoàn tất</span>`;
+                    }
                 } else {
                     actionWidget = `<span class="font-semibold px-2 py-1 rounded block text-center text-[11px] ${p.status==='Hoàn thành'?'bg-green-100 text-green-800':p.status==='Đang xử lý'?'bg-indigo-100 text-indigo-800':'bg-yellow-100 text-yellow-800'}">${p.status}</span>`;
                 }
