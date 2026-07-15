@@ -263,7 +263,7 @@
         const SUPABASE_ANON_KEY = "sb_publishable_prkt5-F3meDr4hO-87x32g_icAptL6W";
         
         // ⚠️ DÁN ĐƯỜNG DẪN WEB APP GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY
-        const GOOGLE_SCRIPT_URL = "ĐIỀN_URL_APPS_SCRIPT_CỦA_BẠN_VÀO_ĐÂY"; 
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxvGa88oMYm9nPyCLeyDWIaV5Bu0DRtsNQ-U1R6xI4RqUDvQy16NTqOcSnbK0bZXsaR/exec"; 
 
         let supabaseClient = null;
         if (SUPABASE_URL && SUPABASE_ANON_KEY) {
@@ -581,7 +581,7 @@
                     return;
                 }
 
-                if (GOOGLE_SCRIPT_URL === "https://script.google.com/macros/s/AKfycbxvGa88oMYm9nPyCLeyDWIaV5Bu0DRtsNQ-U1R6xI4RqUDvQy16NTqOcSnbK0bZXsaR/exec") {
+                if (GOOGLE_SCRIPT_URL === "" || GOOGLE_SCRIPT_URL.includes("ĐIỀN_URL_APPS_SCRIPT")) {
                     alert("Lỗi hệ thống: Admin chưa thiết lập URL Google Apps Script trong mã nguồn!");
                     return;
                 }
