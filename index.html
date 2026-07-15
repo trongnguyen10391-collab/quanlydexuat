@@ -349,7 +349,7 @@
             document.getElementById('role-badge').innerText = user.role==='admin'?'Admin':(user.role==='manager'?'Quản lý':'Nhân viên');
             
             applyUIPermissions();
-            fetchDataFromSupabase();
+            fetchDataFromSupabase(); // Sửa lỗi quan trọng: Gọi lấy dữ liệu ngay khi vừa login thành công hoặc load từ session cũ
             switchTab(user.role === 'staff' ? 'proposals' : 'dashboard');
         }
 
@@ -552,7 +552,6 @@
             else await fetchDataFromSupabase();
         }
 
-        // CHỨC NĂNG XỬ LÝ CHỤP ẢNH VÀ ĐẨY LÊN GOOGLE DRIVE
         async function staffAction(id, action) {
             if (!supabaseClient) return;
             const now = new Date();
@@ -574,7 +573,6 @@
                 }
             } 
             else if (action === 'complete') {
-                // Kiểm tra xem nhân viên đã chụp/chọn ảnh chưa
                 const fileInput = document.getElementById(`file-upload-${id}`);
                 if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
                     alert("⚠️ BẮT BUỘC: Bạn phải chụp ảnh hoặc chọn ảnh nghiệm thu trước khi bấm Hoàn thành!");
@@ -590,18 +588,15 @@
                 const btnComplete = document.getElementById(`btn-comp-${id}`);
                 const btnIncomplete = document.getElementById(`btn-inc-${id}`);
                 
-                // Hiển thị trạng thái đang tải lên để người dùng không bấm lặp lại
                 btnComplete.innerText = "⏳ Đang lưu ảnh vào Drive...";
                 btnComplete.disabled = true;
                 if (btnIncomplete) btnIncomplete.disabled = true;
 
-                // Đọc dữ liệu file ảnh để mã hóa sang dạng chuỗi Base64
                 const reader = new FileReader();
                 reader.onload = async function(eEvent) {
                     const base64String = eEvent.target.result.split(',')[1];
                     
                     try {
-                        // Gửi file đến Google Apps Script
                         const response = await fetch(GOOGLE_SCRIPT_URL, {
                             method: 'POST',
                             body: JSON.stringify({
@@ -614,12 +609,11 @@
                         const result = await response.json();
                         
                         if (result.status === "success") {
-                            // Lưu kết quả trạng thái và URL liên kết ảnh vào database Supabase
                             const { error } = await supabaseClient.from('proposals').update({ 
                                 status: "Hoàn thành", 
                                 completed_at: timeNow, 
                                 reason: "",
-                                image_url: result.url // Lưu đường link ảnh Google Drive
+                                image_url: result.url
                             }).eq('id', id);
 
                             if (error) {
@@ -753,7 +747,6 @@
                     assignWidget = `<span class="font-medium text-xs">👤 ${p.staff_name || 'Chưa phân'}</span>`;
                 }
 
-                // KHU VỰC THAY ĐỔI: Thêm input chụp ảnh vào giao diện Đang xử lý của nhân viên
                 let actionWidget = '';
                 if (currentUser.role === 'staff' && p.staff_user === currentUser.username) {
                     if (p.status === 'Chờ xác nhận') {
@@ -781,7 +774,6 @@
                     reasonWidget = `<span class="text-[10px] text-red-600 block mt-0.5 font-medium bg-red-50 p-0.5 rounded">Lý do: ${p.reason}</span>`;
                 }
 
-                // Cột hiển thị đường dẫn ảnh
                 let imageColHtml = p.image_url ? `<a href="${p.image_url}" target="_blank" class="text-blue-600 hover:underline font-bold block mt-1">🖼️ Xem ảnh Drive</a>` : `<span class="text-gray-400 italic">Chưa có ảnh</span>`;
 
                 desktopHtml += `
