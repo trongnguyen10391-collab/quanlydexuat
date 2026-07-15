@@ -11,7 +11,6 @@
 </head>
 <body class="bg-gray-100 font-sans text-gray-800 antialiased">
 
-    <!-- Container thông báo nổi -->
     <div id="toast-container" class="fixed bottom-4 left-4 right-4 sm:top-4 sm:bottom-auto sm:left-auto sm:right-4 z-50 space-y-2 pointer-events-none"></div>
 
     <div id="login-screen" class="fixed inset-0 bg-slate-900 flex items-center justify-center z-50 p-4 overflow-y-auto">
@@ -87,18 +86,17 @@
                     </select>
                     
                     <div id="custom-date-container" class="hidden flex flex-wrap items-center gap-1.5 pl-2 border-t sm:border-t-0 sm:border-l border-gray-200 pt-1.5 sm:pt-0 w-full sm:w-auto">
-                        <input type="date" id="filter-start-date" onchange="fetchDataFromSupabase()" class="border rounded px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-indigo-500 max-w-[120px]" value="">
+                        <input type="date" id="filter-start-date" onchange="fetchDataFromSupabase()" class="border rounded px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-indigo-500 max-w-[120px]">
                         <span class="text-xs text-gray-400">đến</span>
-                        <input type="date" id="filter-end-date" onchange="fetchDataFromSupabase()" class="border rounded px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-indigo-500 max-w-[120px]" value="">
+                        <input type="date" id="filter-end-date" onchange="fetchDataFromSupabase()" class="border rounded px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-indigo-500 max-w-[120px]">
                     </div>
                 </div>
             </header>
 
             <main class="p-4 sm:p-6 space-y-6">
-                <!-- Banner cảnh báo nhỏ trên Mobile dành cho tài khoản nhân sự -->
                 <div id="mobile-staff-alert" class="hidden bg-indigo-50 border border-indigo-200 rounded-xl p-3 flex items-center gap-2.5 text-xs text-indigo-950 font-medium">
-                    <span class="text-base">🔔</span>
-                    <p>Hệ thống tự động đồng bộ thời gian thực. Giữ ứng dụng luôn mở để nhận chuông báo việc mới.</p>
+                    <span class="text-base">📸</span>
+                    <p>Hệ thống bắt buộc chụp ảnh/tải ảnh xác nhận nghiệm thu khi bấm hoàn thành công việc.</p>
                 </div>
 
                 <div id="tab-dashboard" class="space-y-6">
@@ -133,11 +131,11 @@
                         <div class="flex flex-wrap items-end gap-3">
                             <div class="w-5/12 sm:w-auto">
                                 <label class="block text-[10px] font-bold text-gray-600 mb-1">Từ ngày</label>
-                                <input type="date" id="excel-start-date" class="w-full border rounded-lg px-2.5 py-1.5 text-xs sm:text-sm" value="">
+                                <input type="date" id="excel-start-date" class="w-full border rounded-lg px-2.5 py-1.5 text-xs sm:text-sm">
                             </div>
                             <div class="w-5/12 sm:w-auto">
                                 <label class="block text-[10px] font-bold text-gray-600 mb-1">Đến ngày</label>
-                                <input type="date" id="excel-end-date" class="w-full border rounded-lg px-2.5 py-1.5 text-xs sm:text-sm" value="">
+                                <input type="date" id="excel-end-date" class="w-full border rounded-lg px-2.5 py-1.5 text-xs sm:text-sm">
                             </div>
                             <button onclick="exportToExcel()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 text-xs sm:text-sm transition shadow-sm mt-2 sm:mt-0">
                                 📥 Tải Excel (.xlsx)
@@ -211,7 +209,7 @@
                                     <tr class="bg-gray-100 text-gray-600 uppercase text-[10px] font-bold border-b">
                                         <th class="py-3 px-4">Đề xuất / Hệ thống</th>
                                         <th class="py-3 px-4">Khoa phòng / Vị trí</th>
-                                        <th class="py-3 px-4">Thời gian</th>
+                                        <th class="py-3 px-4">Thời gian / Ảnh Drive</th>
                                         <th class="py-3 px-4">Phân công</th>
                                         <th class="py-3 px-4">Trạng thái</th>
                                         <th class="py-3 px-4">Xử lý nghiệp vụ</th>
@@ -264,6 +262,9 @@
         const SUPABASE_URL = "https://ztnsmstxtgdysurnpcpn.supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_publishable_prkt5-F3meDr4hO-87x32g_icAptL6W";
         
+        // ĐIỀN ĐƯỜNG DẪN URL GOOGLE APPS SCRIPT ĐÃ COPY Ở BƯỚC 1 VÀO ĐÂY
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxvGa88oMYm9nPyCLeyDWIaV5Bu0DRtsNQ-U1R6xI4RqUDvQy16NTqOcSnbK0bZXsaR/exec"; 
+
         let supabaseClient = null;
         if (SUPABASE_URL && SUPABASE_ANON_KEY) {
             supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -314,7 +315,6 @@
         function playNotificationSound() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                
                 const osc1 = audioCtx.createOscillator();
                 const gain1 = audioCtx.createGain();
                 osc1.connect(gain1);
@@ -338,18 +338,15 @@
                     osc2.start(audioCtx.currentTime);
                     osc2.stop(audioCtx.currentTime + 0.4);
                 }, 150);
-
             } catch (e) {
-                console.warn("Lỗi phát âm thanh tự động: ", e);
+                console.warn("Lỗi phát âm thanh: ", e);
             }
         }
 
         function showToast(message) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            
             toast.className = "w-full sm:max-w-sm pointer-events-auto bg-indigo-950 border-l-4 border-amber-400 text-white p-4 rounded-xl shadow-2xl flex items-start justify-between gap-3 text-xs sm:text-sm transition-all duration-300 transform translate-y-4 opacity-0";
-            
             toast.innerHTML = `
                 <div class="flex items-start gap-3">
                     <span class="text-xl shrink-0 mt-0.5 animate-bounce">🚨</span>
@@ -362,11 +359,7 @@
                 <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-white font-black text-sm p-1 leading-none">&times;</button>
             `;
             container.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.classList.remove('translate-y-4', 'opacity-0');
-            }, 50);
-
+            setTimeout(() => toast.classList.remove('translate-y-4', 'opacity-0'), 50);
             setTimeout(() => {
                 toast.classList.add('translate-y-4', 'opacity-0');
                 setTimeout(() => toast.remove(), 300);
@@ -375,22 +368,15 @@
 
         function subscribeToProposalUpdates() {
             if (!supabaseClient || !currentUser) return;
-            
-            if (activeSubscription) {
-                supabaseClient.removeChannel(activeSubscription);
-            }
+            if (activeSubscription) supabaseClient.removeChannel(activeSubscription);
 
             activeSubscription = supabaseClient
                 .channel('realtime_proposals')
                 .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'proposals' }, (payload) => {
                     const oldData = payload.old;
                     const newData = payload.new;
-
                     if (currentUser.role === 'staff') {
-                        const isAssignedToMeNow = (newData.staff_user === currentUser.username);
-                        const wasNotAssignedToMeBefore = (oldData.staff_user !== currentUser.username);
-
-                        if (isAssignedToMeNow && wasNotAssignedToMeBefore) {
+                        if (newData.staff_user === currentUser.username && oldData.staff_user !== currentUser.username) {
                             playNotificationSound();
                             showToast(`${newData.title} - Vị trí: ${newData.dept} (${newData.floor})`);
                         }
@@ -432,13 +418,12 @@
             
             await loadAllUsers();
             const user = appUsers.find(u => u.username === usernameInput && u.password === passwordInput);
-
             if (user) {
                 currentUser = user;
                 localStorage.setItem('proposal_app_user', JSON.stringify(user));
                 executeLoginSuccessBehavior(user);
             } else {
-                alert('Tên đăng nhập hoặc mật khẩu không chính xác trên Hệ thống!');
+                alert('Tên đăng nhập hoặc mật khẩu không chính xác!');
             }
         }
 
@@ -463,27 +448,15 @@
             localStorage.removeItem('proposal_app_user');
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('main-app').classList.add('hidden');
-            document.getElementById('login-username').value = '';
-            document.getElementById('login-password').value = '';
         }
 
         async function changePasswordSelf() {
             if (!supabaseClient || !currentUser) return;
-            const newPassword = prompt("Nhập mật khẩu mới của bạn:");
+            const newPassword = prompt("Nhập mật khẩu mới:");
             if (!newPassword) return;
-            const confirmPass = prompt("Xác nhận lại mật khẩu mới:");
-            if (newPassword !== confirmPass) {
-                alert("Mật khẩu xác nhận không khớp!");
-                return;
-            }
-
             const { error } = await supabaseClient.from('users').update({ password: newPassword.trim() }).eq('id', currentUser.id);
-            if (error) {
-                alert("Lỗi khi đổi mật khẩu: " + error.message);
-            } else {
-                alert("Đổi mật khẩu thành công! Hệ thống sẽ đăng xuất để bạn đăng nhập lại.");
-                handleLogout();
-            }
+            if (error) alert("Lỗi: " + error.message);
+            else { alert("Thành công! Hãy đăng nhập lại."); handleLogout(); }
         }
 
         function applyUIPermissions() {
@@ -494,14 +467,11 @@
             const mobileStaffAlert = document.getElementById('mobile-staff-alert');
 
             btnDashboard.style.display = 'block'; btnProposals.style.display = 'block'; btnStatistics.style.display = 'block';
-            timeFilterWrapper.style.display = 'flex';
-            mobileStaffAlert.classList.add('hidden');
+            timeFilterWrapper.style.display = 'flex'; mobileStaffAlert.classList.add('hidden');
 
             if (currentUser.role === 'staff') {
-                btnDashboard.style.display = 'none'; 
-                btnStatistics.style.display = 'none';
-                timeFilterWrapper.style.display = 'none'; 
-                mobileStaffAlert.classList.remove('hidden');
+                btnDashboard.style.display = 'none'; btnStatistics.style.display = 'none';
+                timeFilterWrapper.style.display = 'none'; mobileStaffAlert.classList.remove('hidden');
             } else if (currentUser.role === 'manager') {
                 btnProposals.style.display = 'none';
             }
@@ -509,126 +479,54 @@
 
         async function createUser(e) {
             e.preventDefault();
-            if (!supabaseClient) return;
             const username = document.getElementById('u-username').value.trim().toLowerCase();
             const password = document.getElementById('u-password').value.trim();
             const name = document.getElementById('u-fullname').value.trim();
             const role = document.getElementById('u-role').value;
 
-            const exist = appUsers.find(u => u.username === username);
-            if (exist) {
-                alert('Tên đăng nhập này đã tồn tại trên Database!');
-                return;
-            }
-
             const { error } = await supabaseClient.from('users').insert([{ username, password, name, role }]);
-            if (error) {
-                alert('Lỗi khi tạo user: ' + error.message);
-            } else {
-                alert('Tài khoản mới đã được lưu trực tiếp vào Database!');
-                document.getElementById('u-username').value = ''; document.getElementById('u-password').value = ''; document.getElementById('u-fullname').value = '';
-                await loadAllUsers();
-                render();
-            }
+            if (error) alert('Lỗi: ' + error.message);
+            else { alert('Tạo tài khoản thành công!'); await loadAllUsers(); render(); }
         }
 
         async function editUser(id) {
-            if (!supabaseClient) return;
             const u = appUsers.find(user => user.id === id);
             if (!u) return;
-
             const newName = prompt("Sửa tên nhân sự:", u.name);
             if (newName === null) return;
-            const newPassword = prompt("Sửa mật khẩu mới (Bỏ trống nếu giữ nguyên):", u.password);
-            if (newPassword === null) return;
-
-            let updateData = { name: newName.trim() };
-            if (newPassword.trim() !== "") {
-                updateData.password = newPassword.trim();
-            }
-
-            const { error } = await supabaseClient.from('users').update(updateData).eq('id', id);
-            if (error) {
-                alert("Lỗi khi sửa tài khoản: " + error.message);
-            } else {
-                alert("Đã cập nhật thông tin tài khoản thành công!");
-                if (currentUser.id === id) {
-                    const nextUser = { ...currentUser, ...updateData };
-                    localStorage.setItem('proposal_app_user', JSON.stringify(nextUser));
-                    currentUser = nextUser;
-                    document.getElementById('user-display-name').innerText = nextUser.name;
-                }
-                await loadAllUsers();
-                render();
-            }
+            const { error } = await supabaseClient.from('users').update({ name: newName.trim() }).eq('id', id);
+            if (!error) { alert("Cập nhật thành công!"); await loadAllUsers(); render(); }
         }
 
         async function deleteUser(id, username) {
-            if (!supabaseClient) return;
-            if (username === 'admin') {
-                alert("Không được phép xóa tài khoản quản trị hệ thống mặc định (admin)!");
-                return;
-            }
-            if (confirm(`Bạn chắc chắn muốn XÓA VĨNH VIỄN tài khoản [${username}] khỏi database?`)) {
+            if (username === 'admin') return alert("Không được xóa admin mặc định!");
+            if (confirm(`Bạn muốn xóa tài khoản [${username}]?`)) {
                 const { error } = await supabaseClient.from('users').delete().eq('id', id);
-                if (error) {
-                    alert("Lỗi khi xóa tài khoản: " + error.message);
-                } else {
-                    alert("Đã xóa tài khoản thành công!");
-                    if (currentUser.username === username) handleLogout();
-                    else {
-                        await loadAllUsers();
-                        render();
-                    }
-                }
+                if (!error) { alert("Đã xóa!"); await loadAllUsers(); render(); }
             }
         }
 
         function toggleCustomDateInputs() {
             const filterSelect = document.getElementById('time-range-filter').value;
-            const customContainer = document.getElementById('custom-date-container');
-            if (filterSelect === 'custom') customContainer.classList.remove('hidden');
-            else customContainer.classList.add('hidden');
+            document.getElementById('custom-date-container').style.display = (filterSelect === 'custom') ? 'flex' : 'none';
             render();
         }
 
         function isProposalInTimeRange(createdStr, range) {
             if (!createdStr) return false;
-            
             const pDatePart = createdStr.split(' ')[0];
             const pDate = new Date(pDatePart);
             const today = new Date();
-            
-            today.setHours(0,0,0,0);
-            pDate.setHours(0,0,0,0);
+            today.setHours(0,0,0,0); pDate.setHours(0,0,0,0);
 
-            const yyyy = today.getFullYear();
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const dd = String(today.getDate()).padStart(2, '0');
-            const currentDateStr = `${yyyy}-${mm}-${dd}`;
-
-            if (range === 'today') {
-                return pDatePart === currentDateStr;
-            }
-            if (range === 'week') {
-                const diffTime = today - pDate;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                return diffDays >= 0 && diffDays <= 7;
-            }
-            if (range === 'month') {
-                return pDate.getMonth() === today.getMonth() && pDate.getFullYear() === today.getFullYear();
-            }
+            if (range === 'today') return pDatePart === `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+            if (range === 'week') return (today - pDate) / (1000*60*60*24) <= 7;
+            if (range === 'month') return pDate.getMonth() === today.getMonth() && pDate.getFullYear() === today.getFullYear();
             if (range === 'custom') {
                 const start = document.getElementById('filter-start-date').value;
                 const end = document.getElementById('filter-end-date').value;
                 if (!start || !end) return true;
-                
-                const startDate = new Date(start);
-                const endDate = new Date(end);
-                startDate.setHours(0,0,0,0);
-                endDate.setHours(0,0,0,0);
-                
-                return pDate >= startDate && pDate <= endDate;
+                return pDate >= new Date(start) && pDate <= new Date(end);
             }
             return false;
         }
@@ -643,15 +541,12 @@
             });
             document.getElementById(`tab-${tabName}`).classList.remove('hidden');
             document.getElementById(`btn-${tabName}`).classList.add('bg-slate-800', 'font-semibold');
-            
             document.getElementById('page-title').innerText = { 'dashboard': 'Bảng Điều Khiển', 'proposals': 'Tiếp Nhận & Xử Lý', 'statistics': 'Thống Kê Tổng Hợp' }[tabName];
-            if (window.innerWidth < 1024 && !document.getElementById('sidebar').classList.contains('-translate-x-full')) toggleSidebar();
             render();
         }
 
         async function addProposal(e) {
             e.preventDefault();
-            if (!supabaseClient) return;
             const title = document.getElementById('p-title').value.trim();
             const system = document.getElementById('p-system').value.trim();
             const dept = document.getElementById('p-dept').value.trim();
@@ -662,297 +557,248 @@
 
             const { error } = await supabaseClient.from('proposals').insert([{
                 title, system, dept, floor, created_at: dateStr, completed_at: "",
-                staff_user: "", staff_name: "", status: "Chờ phân công", reason: ""
+                staff_user: "", staff_name: "", status: "Chờ phân công", reason: "", image_url: ""
             }]);
-
-            if (error) alert("Lỗi lưu DB: " + error.message);
-            else {
-                document.getElementById('p-title').value = ''; document.getElementById('p-system').value = ''; document.getElementById('p-dept').value = '';
-                await fetchDataFromSupabase();
-            }
+            if (!error) { await fetchDataFromSupabase(); }
         }
 
-        // Hàm hỗ trợ Admin sửa đổi nội dung đề xuất trực tiếp từ giao diện
         async function updateProposalField(id, fieldName, value) {
-            if (!supabaseClient || currentUser.role !== 'admin') return;
-            
-            const { error } = await supabaseClient
-                .from('proposals')
-                .update({ [fieldName]: value.trim() })
-                .eq('id', id);
-
-            if (error) {
-                alert(`Lỗi cập nhật trường ${fieldName}: ` + error.message);
-            } else {
-                // Tải lại dữ liệu sau khi sửa thành công để đồng bộ biểu đồ và KPI
-                await fetchDataFromSupabase();
-            }
+            if (currentUser.role !== 'admin') return;
+            await supabaseClient.from('proposals').update({ [fieldName]: value.trim() }).eq('id', id);
+            await fetchDataFromSupabase();
         }
 
         async function assignStaff(id, staffUsername) {
-            if (!supabaseClient) return;
-            let updateFields = {};
-            if (staffUsername === "") {
-                updateFields = { staff_user: "", staff_name: "", status: "Chờ phân công", reason: "" };
-            } else {
-                const ts = appUsers.find(u => u.username === staffUsername);
-                updateFields = { staff_user: staffUsername, staff_name: ts.name, status: "Chờ xác nhận", reason: "" };
-            }
-
-            const { error } = await supabaseClient.from('proposals').update(updateFields).eq('id', id);
-            if (error) alert("Lỗi cập nhật: " + error.message);
-            else await fetchDataFromSupabase();
+            let updateFields = staffUsername === "" ? 
+                { staff_user: "", staff_name: "", status: "Chờ phân công", reason: "" } : 
+                { staff_user: staffUsername, staff_name: appUsers.find(u => u.username === staffUsername).name, status: "Chờ xác nhận", reason: "" };
+            await supabaseClient.from('proposals').update(updateFields).eq('id', id);
+            await fetchDataFromSupabase();
         }
 
+        // CHỨC NĂNG XỬ LÝ ẢNH VÀ ĐẨY LÊN GOOGLE DRIVE TRƯỚC KHI HOÀN THÀNH
         async function staffAction(id, action) {
             if (!supabaseClient) return;
             const now = new Date();
             const timeNow = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
-            let updateFields = {};
             if (action === 'confirm') {
-                updateFields = { status: "Đang xử lý" };
-            } else if (action === 'complete') {
-                updateFields = { status: "Hoàn thành", completed_at: timeNow, reason: "" };
-            } else if (action === 'incomplete') {
-                const r = prompt("Nhập lý do hoãn/chưa xong:");
-                if (r && r.trim() !== "") updateFields = { status: "Đang xử lý", reason: r.trim() };
-                else return alert("Phải có lý do báo hoãn!");
-            }
+                await supabaseClient.from('proposals').update({ status: "Đang xử lý" }).eq('id', id);
+                await fetchDataFromSupabase();
+            } 
+            else if (action === 'incomplete') {
+                const r = prompt("Nhập lý do hoãn:");
+                if (r && r.trim() !== "") {
+                    await supabaseClient.from('proposals').update({ status: "Đang xử lý", reason: r.trim() }).eq('id', id);
+                    await fetchDataFromSupabase();
+                }
+            } 
+            else if (action === 'complete') {
+                // Lấy thẻ input file tương ứng của dòng đó
+                const fileInput = document.getElementById(`file-upload-${id}`);
+                if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                    alert("⚠️ BẮT BUỘC: Bạn phải chọn hoặc chụp một ảnh nghiệm thu công việc trước khi bấm hoàn thành!");
+                    return;
+                }
 
-            const { error } = await supabaseClient.from('proposals').update(updateFields).eq('id', id);
-            if (error) alert("Lỗi: " + error.message);
-            else await fetchDataFromSupabase();
+                if (GOOGLE_SCRIPT_URL === "YOUR_GOOGLE_WEB_APP_URL_HERE") {
+                    alert("Lỗi cấu hình: Quản trị viên chưa cập nhật GOOGLE_SCRIPT_URL trong mã nguồn ứng dụng.");
+                    return;
+                }
+
+                const file = fileInput.files[0];
+                const btnComplete = document.getElementById(`btn-comp-${id}`);
+                btnComplete.innerText = "⏳ Đang tải ảnh lên Drive...";
+                btnComplete.disabled = true;
+
+                // Đọc file sang định dạng Base64
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    const base64String = e.target.result.split(',')[1];
+                    
+                    try {
+                        // Đẩy file lên Google Apps Script API trung gian
+                        const response = await fetch(GOOGLE_SCRIPT_URL, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                base64: base64String,
+                                mimeType: file.type,
+                                fileName: `DeXuat_${id}_${Date.now()}_${file.name}`
+                            })
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.status === "success") {
+                            // Cập nhật trạng thái và link ảnh Google Drive vào Supabase DB
+                            const { error } = await supabaseClient.from('proposals').update({ 
+                                status: "Hoàn thành", 
+                                completed_at: timeNow, 
+                                reason: "",
+                                image_url: result.url // Lưu URL Drive
+                            }).eq('id', id);
+
+                            if (error) alert("Lỗi lưu database: " + error.message);
+                            else alert("✅ Đã tải ảnh lên Google Drive và Hoàn thành công việc thành công!");
+                        } else {
+                            alert("❌ Lỗi tải ảnh lên Google Drive: " + result.message);
+                        }
+                    } catch (err) {
+                        alert("❌ Không thể kết nối tới máy chủ Google Drive. Chi tiết: " + err.message);
+                    } finally {
+                        await fetchDataFromSupabase();
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
         }
 
         async function deleteProposal(id) {
-            if (!supabaseClient) return;
-            if (confirm('Bạn chắc chắn muốn XÓA VĨNH VIỄN đề xuất này khỏi tệp DB lưu trữ?')) {
-                const { error } = await supabaseClient.from('proposals').delete().eq('id', id);
-                if (error) alert("Lỗi xóa: " + error.message);
-                else await fetchDataFromSupabase();
+            if (confirm('Bạn chắc chắn muốn XÓA VĨNH VIỄN đề xuất này?')) {
+                await supabaseClient.from('proposals').delete().eq('id', id);
+                await fetchDataFromSupabase();
             }
         }
 
         function exportToExcel() {
             const start = document.getElementById('excel-start-date').value;
             const end = document.getElementById('excel-end-date').value;
-            if (!start || !end) return alert('Hãy nhập thời gian!');
-            const targetData = proposals.filter(p => {
-                const pd = new Date(p.created_at.split(' ')[0]);
-                return pd >= new Date(start) && pd <= new Date(end + "T23:59:59");
-            });
-            if(targetData.length === 0) return alert('Không có dữ liệu!');
+            const targetData = proposals.filter(p => new Date(p.created_at.split(' ')[0]) >= new Date(start) && new Date(p.created_at.split(' ')[0]) <= new Date(end));
             const raw = targetData.map((p, i) => ({
                 "STT": i + 1, "Nội Dung": p.title, "Hệ Thống": p.system, "Khoa/Phòng": p.dept, "Tầng": p.floor,
-                "Nhận Lúc": p.created_at, "Xong Lúc": p.completed_at || "Chưa", "Nhân Viên": p.staff_name || "Chưa", "Trạng Thái": p.status, "Ghi chú/Lý do": p.reason || ""
+                "Nhận Lúc": p.created_at, "Xong Lúc": p.completed_at || "Chưa", "Nhân Viên": p.staff_name || "Chưa", "Trạng Thái": p.status, "Link Ảnh Drive": p.image_url || ""
             }));
             const ws = XLSX.utils.json_to_sheet(raw); const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Báo cáo"); XLSX.writeFile(wb, `Bao_Cao_${start}_to_${end}.xlsx`);
+            XLSX.utils.book_append_sheet(wb, ws, "Báo cáo"); XLSX.writeFile(wb, `Bao_Cao.xlsx`);
         }
 
         function render() {
             if (!currentUser) return;
-            
             const timeRange = document.getElementById('time-range-filter').value;
-            let timeFiltered = proposals.filter(p => {
-                if (currentUser.role === 'staff') return true; 
-                return isProposalInTimeRange(p.created_at, timeRange);
-            });
-
-            let kanbanData = [...timeFiltered];
-            if (currentUser.role === 'staff') {
-                kanbanData = proposals.filter(p => p.staff_user === currentUser.username && p.status !== "Hoàn thành");
-            }
+            let timeFiltered = proposals.filter(p => currentUser.role === 'staff' ? true : isProposalInTimeRange(p.created_at, timeRange));
+            let kanbanData = currentUser.role === 'staff' ? proposals.filter(p => p.staff_user === currentUser.username && p.status !== "Hoàn thành") : [...timeFiltered];
 
             document.getElementById('kpi-total').innerText = kanbanData.length;
             document.getElementById('kpi-pending').innerText = kanbanData.filter(p => p.status === "Chờ xác nhận").length;
             document.getElementById('kpi-processing').innerText = kanbanData.filter(p => p.status === "Đang xử lý").length;
             document.getElementById('kpi-completed').innerText = kanbanData.filter(p => p.status === "Hoàn thành").length;
 
-            const kanbanContainer = document.getElementById('dashboard-kanban');
-            kanbanContainer.innerHTML = ['Chờ xác nhận', 'Đang xử lý', 'Hoàn thành'].map(st => {
+            // Render Kanban
+            document.getElementById('dashboard-kanban').innerHTML = ['Chờ xác nhận', 'Đang xử lý', 'Hoàn thành'].map(st => {
                 const list = kanbanData.filter(p => p.status === st);
                 return `
                     <div class="bg-slate-50 p-3 rounded-xl border">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-xs font-bold uppercase text-gray-500">${st}</span>
-                            <span class="bg-slate-200 text-gray-700 text-xs px-2 py-0.5 rounded-full font-bold">${list.length}</span>
-                        </div>
+                        <div class="flex justify-between items-center mb-2"><span class="text-xs font-bold text-gray-500">${st}</span></div>
                         <div class="space-y-2">
-                            ${list.map(p => {
-                                return `
-                                    <div class="bg-white p-3 rounded-lg shadow-xs border-l-4 border-indigo-500 text-xs">
-                                        <span class="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-bold text-[10px]">${p.system}</span>
-                                        <p class="font-bold text-gray-800 mt-1">${p.title}</p>
-                                        <p class="text-gray-500 text-[11px]">📍 ${p.dept} (${p.floor})</p>
-                                        ${p.reason && p.status !== 'Hoàn thành' ? `<p class="mt-1 bg-red-50 text-red-700 p-1 rounded font-medium">⚠️ Hoãn: ${p.reason}</p>` : ''}
-                                    </div>
-                                `;
-                            }).join('')}
+                            ${list.map(p => `
+                                <div class="bg-white p-3 rounded-lg shadow-xs border-l-4 border-indigo-500 text-xs">
+                                    <span class="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-bold">${p.system}</span>
+                                    <p class="font-bold text-gray-800 mt-1">${p.title}</p>
+                                    <p class="text-gray-500">📍 ${p.dept} (${p.floor})</p>
+                                    ${p.image_url ? `<a href="${p.image_url}" target="_blank" class="text-blue-600 block mt-1 hover:underline font-medium">🖼️ Xem ảnh Drive</a>` : ''}
+                                </div>
+                            `).join('')}
                         </div>
                     </div>
                 `;
             }).join('');
 
-            const excelContainer = document.getElementById('excel-export-container');
-            const adminForm = document.getElementById('admin-form-container');
-            const adminUserForm = document.getElementById('admin-user-container');
-            const thActions = document.getElementById('th-actions');
-            const tableViewTitle = document.getElementById('table-view-title');
-
+            // Phân quyền Layout
             if (currentUser.role === 'admin') {
-                excelContainer.style.display='block'; adminForm.style.display='block'; adminUserForm.style.display='block'; if(thActions) thActions.style.display='table-cell';
-                tableViewTitle.innerText = "📋 Quản Lý Danh Sách Đề Xuất Toàn Hệ Thống";
-                
                 document.getElementById('admin-users-list-view').innerHTML = appUsers.map(u => `
-                    <div class="py-1 border-b flex justify-between items-center gap-1">
-                        <div class="truncate">
-                            👤 <b>${u.username}</b> <span class="text-[10px] text-gray-400">(${u.role})</span>
-                            <p class="text-[10px] text-gray-500 truncate">${u.name}</p>
-                        </div>
-                        <div class="flex gap-1 shrink-0">
-                            <button onclick="editUser(${u.id})" class="text-blue-600 hover:underline px-1">Sửa</button>
-                            <button onclick="deleteUser(${u.id}, '${u.username}')" class="text-red-600 hover:underline px-1">Xóa</button>
-                        </div>
+                    <div class="py-1 border-b flex justify-between items-center text-xs">
+                        <div><b>${u.username}</b> (${u.role})<p class="text-gray-500">${u.name}</p></div>
+                        <div><button onclick="editUser(${u.id})" class="text-blue-600 mr-2">Sửa</button><button onclick="deleteUser(${u.id}, '${u.username}')" class="text-red-600">Xóa</button></div>
                     </div>
                 `).join('');
-            } else if (currentUser.role === 'manager') {
-                excelContainer.style.display='block'; adminForm.style.display='none'; adminUserForm.style.display='none'; if(thActions) thActions.style.display='none';
-                tableViewTitle.innerText = "📋 Danh Sách Đề Xuất Điều Phối";
-            } else {
-                excelContainer.style.display='none'; adminForm.style.display='none'; adminUserForm.style.display='none'; if(thActions) thActions.style.display='none';
-                tableViewTitle.innerText = "📋 Công Việc Được Giao Cho Bạn (Chưa xong)";
             }
 
+            // Render Bảng / Card Danh Sách
             const tableBody = document.getElementById('proposal-table-body');
             const mobileCardsContainer = document.getElementById('proposal-mobile-cards');
             const staffUsersList = appUsers.filter(u => u.role === 'staff');
-
             let desktopHtml = ''; let mobileHtml = '';
-            let dataForTable = (currentUser.role === 'staff') ? proposals : timeFiltered;
+            let dataForTable = (currentUser.role === 'staff') ? proposals.filter(p => p.staff_user === currentUser.username && p.status !== "Hoàn thành") : timeFiltered;
 
             dataForTable.forEach(p => {
-                if (currentUser.role === 'staff') {
-                    if (p.staff_user !== currentUser.username || p.status === "Hoàn thành") {
-                        return; 
-                    }
-                }
-
-                // Giao diện phân công nhân sự
-                let assignWidget = '';
+                // Select Phân công
+                let assignWidget = `<span class="font-medium">👤 ${p.staff_name || 'Chưa phân'}</span>`;
                 if (currentUser.role === 'admin' || currentUser.role === 'manager') {
-                    assignWidget = `<select onchange="assignStaff(${p.id}, this.value)" class="border text-xs rounded p-1 bg-white w-full">`;
-                    assignWidget += `<option value="">-- Chọn NV --</option>`;
+                    assignWidget = `<select onchange="assignStaff(${p.id}, this.value)" class="border text-xs rounded p-1 bg-white w-full"><option value="">-- Chọn NV --</option>`;
                     staffUsersList.forEach(u => assignWidget += `<option value="${u.username}" ${p.staff_user === u.username ? 'selected' : ''}>${u.name}</option>`);
                     assignWidget += `</select>`;
-                } else {
-                    assignWidget = `<span class="font-medium text-xs">👤 ${p.staff_name || 'Chưa phân'}</span>`;
                 }
 
-                // Giao diện nút bấm hành động (Nhận việc / Hoàn thành)
-                let actionWidget = '';
+                // Cột Nghiệp Vụ Hành Động Hành Vi (Nhân Viên và File Upload Bắt Buộc)
+                let actionWidget = `<span class="font-semibold px-2 py-1 rounded block text-center ${p.status==='Hoàn thành'?'bg-green-100 text-green-800':'bg-yellow-100 text-yellow-800'}">${p.status}</span>`;
                 if (currentUser.role === 'staff' && p.staff_user === currentUser.username) {
-                    if (p.status === 'Chờ xác nhận') actionWidget = `<button onclick="staffAction(${p.id}, 'confirm')" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-blue-700 active:scale-95 transition shadow-sm">Nhận Việc Ngay</button>`;
-                    else if (p.status === 'Đang xử lý') {
-                        actionWidget = `<div class="flex gap-2 w-full"><button onclick="staffAction(${p.id}, 'complete')" class="flex-1 bg-green-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-green-700 active:scale-95 transition shadow-sm">Hoàn Thành</button><button onclick="staffAction(${p.id}, 'incomplete')" class="flex-1 bg-amber-500 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-amber-600 active:scale-95 transition shadow-sm">Báo Hoãn</button></div>`;
+                    if (p.status === 'Chờ xác nhận') {
+                        actionWidget = `<button onclick="staffAction(${p.id}, 'confirm')" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg text-xs hover:bg-blue-700">Nhận Việc</button>`;
+                    } else if (p.status === 'Đang xử lý') {
+                        actionWidget = `
+                            <div class="space-y-2 bg-gray-50 p-2 rounded border">
+                                <label class="block text-[10px] font-bold text-red-600 uppercase">📸 Bắt buộc: Chụp/Tải ảnh</label>
+                                <input type="file" id="file-upload-${p.id}" accept="image/*" capture="environment" class="w-full text-[11px] block text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                                <div class="flex gap-1">
+                                    <button id="btn-comp-${p.id}" onclick="staffAction(${p.id}, 'complete')" class="flex-1 bg-green-600 text-white font-bold py-1.5 rounded text-[11px] hover:bg-green-700">Hoàn Thành</button>
+                                    <button onclick="staffAction(${p.id}, 'incomplete')" class="bg-amber-500 text-white font-bold py-1.5 px-2 rounded text-[11px] hover:bg-amber-600">Hoãn</button>
+                                </div>
+                            </div>
+                        `;
                     }
-                } else {
-                    actionWidget = `<span class="font-semibold px-2 py-1 rounded block text-center text-[11px] ${p.status==='Hoàn thành'?'bg-green-100 text-green-800':p.status==='Đang xử lý'?'bg-indigo-100 text-indigo-800':'bg-yellow-100 text-yellow-800'}">${p.status}</span>`;
                 }
 
-                let reasonWidget = '';
-                if (p.reason && p.status !== 'Hoàn thành') {
-                    reasonWidget = `<span class="text-[10px] text-red-600 block mt-0.5 font-medium bg-red-50 p-0.5 rounded">Lý do: ${p.reason}</span>`;
-                }
+                // Cột Ảnh hiển thị phía Quản lý / Admin
+                let imageColHtml = p.image_url ? `<a href="${p.image_url}" target="_blank" class="text-blue-600 hover:underline font-bold block mt-1 flex items-center gap-1">🖼️ Xem ảnh Drive</a>` : `<span class="text-gray-400 italic">Chưa có ảnh</span>`;
 
-                // --- TÍCH HỢP QUYỀN EDIT CHO ADMIN ---
-                let titleColHtml = '';
-                let deptColHtml = '';
-
+                // Quyền Admin sửa thông tin
+                let titleColHtml = `<span class="font-bold text-gray-800 block">${p.title}</span><span class="text-[10px] text-indigo-700 font-semibold">${p.system}</span>`;
+                let deptColHtml = `<span class="font-medium block">${p.dept}</span><span class="text-[10px] text-gray-400 block">${p.floor}</span>`;
                 if (currentUser.role === 'admin') {
-                    // Cột Đề xuất / Hệ thống: Cho phép admin nhập nội dung chỉnh sửa trực tiếp (onchange sẽ lưu thẳng vào database)
                     titleColHtml = `
                         <div class="space-y-1">
-                            <input type="text" value="${p.title}" onchange="updateProposalField(${p.id}, 'title', this.value)" class="w-full border rounded px-2 py-1 font-bold text-gray-800 focus:ring-1 focus:ring-indigo-500">
-                            <input type="text" value="${p.system}" onchange="updateProposalField(${p.id}, 'system', this.value)" class="w-full border rounded px-2 py-0.5 text-[10px] text-indigo-700 font-semibold focus:ring-1 focus:ring-indigo-500">
+                            <input type="text" value="${p.title}" onchange="updateProposalField(${p.id}, 'title', this.value)" class="w-full border rounded px-1.5 py-0.5 text-xs font-bold">
+                            <input type="text" value="${p.system}" onchange="updateProposalField(${p.id}, 'system', this.value)" class="w-full border rounded px-1.5 py-0.5 text-[10px] text-indigo-700 font-semibold">
                         </div>
                     `;
-                    // Cột Khoa phòng / Vị trí
                     deptColHtml = `
                         <div class="space-y-1">
-                            <input type="text" value="${p.dept}" onchange="updateProposalField(${p.id}, 'dept', this.value)" class="w-full border rounded px-2 py-1 font-medium focus:ring-1 focus:ring-indigo-500">
-                            <select onchange="updateProposalField(${p.id}, 'floor', this.value)" class="w-full border rounded px-2 py-0.5 text-[10px] focus:ring-1 focus:ring-indigo-500">
-                                <option value="Tầng hầm" ${p.floor === 'Tầng hầm' ? 'selected' : ''}>Tầng hầm</option>
-                                <option value="Tầng 1" ${p.floor === 'Tầng 1' ? 'selected' : ''}>Tầng 1</option>
-                                <option value="Tầng M" ${p.floor === 'Tầng M' ? 'selected' : ''}>Tầng M</option>
-                                <option value="Tầng 2" ${p.floor === 'Tầng 2' ? 'selected' : ''}>Tầng 2</option>
-                                <option value="Tầng 3" ${p.floor === 'Tầng 3' ? 'selected' : ''}>Tầng 3</option>
-                                <option value="Tầng 4" ${p.floor === 'Tầng 4' ? 'selected' : ''}>Tầng 4</option>
-                                <option value="Tầng 5" ${p.floor === 'Tầng 5' ? 'selected' : ''}>Tầng 5</option>
+                            <input type="text" value="${p.dept}" onchange="updateProposalField(${p.id}, 'dept', this.value)" class="w-full border rounded px-1.5 py-0.5 text-xs">
+                            <select onchange="updateProposalField(${p.id}, 'floor', this.value)" class="w-full border rounded px-1.5 py-0.5 text-[10px]">
+                                <option value="Tầng hầm" ${p.floor==='Tầng hầm'?'selected':''}>Tầng hầm</option>
+                                <option value="Tầng 1" ${p.floor==='Tầng 1'?'selected':''}>Tầng 1</option>
+                                <option value="Tầng M" ${p.floor==='Tầng M'?'selected':''}>Tầng M</option>
+                                <option value="Tầng 2" ${p.floor==='Tầng 2'?'selected':''}>Tầng 2</option>
+                                <option value="Tầng 3" ${p.floor==='Tầng 3'?'selected':''}>Tầng 3</option>
+                                <option value="Tầng 4" ${p.floor==='Tầng 4'?'selected':''}>Tầng 4</option>
+                                <option value="Tầng 5" ${p.floor==='Tầng 5'?'selected':''}>Tầng 5</option>
                             </select>
                         </div>
                     `;
-                } else {
-                    titleColHtml = `<span class="font-bold text-gray-800 block">${p.title}</span><span class="text-[10px] text-indigo-700 font-semibold">${p.system}</span>`;
-                    deptColHtml = `<span class="font-medium block">${p.dept}</span><span class="text-[10px] text-gray-400 block">${p.floor}</span>`;
                 }
 
                 desktopHtml += `
                     <tr class="hover:bg-gray-50 border-b">
-                        <td class="py-3 px-4 min-w-[200px]">${titleColHtml}</td>
-                        <td class="py-3 px-4 min-w-[150px]">${deptColHtml}</td>
-                        <td class="py-3 px-4 text-gray-500 text-[11px]">📥 ${p.created_at} ${p.completed_at ? `<br><span class="text-green-600 font-medium">🏁 ${p.completed_at}</span>` : ''}</td>
-                        <td class="py-3 px-4">${assignWidget}</td>
-                        <td class="py-3 px-4"><span>${p.status}</span>${reasonWidget}</td>
+                        <td class="py-3 px-4">${titleColHtml}</td>
+                        <td class="py-3 px-4">${deptColHtml}</td>
+                        <td class="py-3 px-4 text-gray-500 text-[11px]">📥 ${p.created_at} ${p.completed_at ? `<br><span class="text-green-600 font-bold">🏁 ${p.completed_at}</span>`:''} ${imageColHtml}</td>
+                        <td class="py-3 px-4 min-w-[130px]">${assignWidget}</td>
+                        <td class="py-3 px-4"><span>${p.status}</span>${p.reason ? `<p class="text-red-600 text-[10px]">Lý do: ${p.reason}</p>`:''}</td>
                         <td class="py-3 px-4">${actionWidget}</td>
-                        ${currentUser.role === 'admin' ? `<td class="py-3 px-4 text-center"><button onclick="deleteProposal(${p.id})" class="text-red-500 hover:text-red-700 font-bold">Xóa</button></td>` : ''}
+                        ${currentUser.role==='admin' ? `<td class="py-3 px-4 text-center"><button onclick="deleteProposal(${p.id})" class="text-red-500 font-bold hover:underline">Xóa</button></td>` : ''}
                     </tr>
                 `;
 
-                // Bản Mobile
-                let mobileTitleHtml = '';
-                let mobileLocationHtml = '';
-                
-                if (currentUser.role === 'admin') {
-                    mobileTitleHtml = `
-                        <div class="space-y-1 mt-1">
-                            <input type="text" value="${p.title}" onchange="updateProposalField(${p.id}, 'title', this.value)" class="w-full border rounded px-2 py-1 text-sm font-bold text-gray-800">
-                            <input type="text" value="${p.system}" onchange="updateProposalField(${p.id}, 'system', this.value)" class="w-full border rounded px-2 py-0.5 text-xs text-indigo-700 font-semibold">
-                        </div>
-                    `;
-                    mobileLocationHtml = `
-                        <div class="space-y-1">
-                            <input type="text" value="${p.dept}" onchange="updateProposalField(${p.id}, 'dept', this.value)" class="w-full border rounded px-2 py-1 font-bold text-gray-700 text-xs">
-                            <select onchange="updateProposalField(${p.id}, 'floor', this.value)" class="w-full border rounded px-2 py-1 text-xs">
-                                <option value="Tầng hầm" ${p.floor === 'Tầng hầm' ? 'selected' : ''}>Tầng hầm</option>
-                                <option value="Tầng 1" ${p.floor === 'Tầng 1' ? 'selected' : ''}>Tầng 1</option>
-                                <option value="Tầng M" ${p.floor === 'Tầng M' ? 'selected' : ''}>Tầng M</option>
-                                <option value="Tầng 2" ${p.floor === 'Tầng 2' ? 'selected' : ''}>Tầng 2</option>
-                                <option value="Tầng 3" ${p.floor === 'Tầng 3' ? 'selected' : ''}>Tầng 3</option>
-                                <option value="Tầng 4" ${p.floor === 'Tầng 4' ? 'selected' : ''}>Tầng 4</option>
-                                <option value="Tầng 5" ${p.floor === 'Tầng 5' ? 'selected' : ''}>Tầng 5</option>
-                            </select>
-                        </div>
-                    `;
-                } else {
-                    mobileTitleHtml = `<span class="bg-indigo-50 text-indigo-700 text-[10px] px-2 py-0.5 rounded font-bold">${p.system}</span><h4 class="font-bold text-sm text-gray-800 mt-1">${p.title}</h4>`;
-                    mobileLocationHtml = `<p class="text-gray-400 font-medium">Nơi yêu cầu</p><p class="font-bold text-gray-700">${p.dept} (${p.floor})</p>`;
-                }
-
+                // Bản mobile
                 mobileHtml += `
-                    <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 space-y-3">
-                        <div class="flex justify-between items-start gap-2">
-                            <div class="w-full">${mobileTitleHtml}</div>
-                            ${currentUser.role === 'admin' ? `<button onclick="deleteProposal(${p.id})" class="text-xs bg-red-50 text-red-600 px-2 py-1 rounded font-bold shrink-0">Xóa</button>` : ''}
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-2 rounded-lg border">
-                            <div>${mobileLocationHtml}</div>
-                            <div><p class="text-gray-400 font-medium">Thời gian</p><p class="text-[11px] text-gray-600">${p.created_at}</p></div>
-                        </div>
-                        <div class="space-y-2">
-                            <div class="flex items-center gap-2 justify-between"><span class="text-xs text-gray-400 font-medium">Nhân sự:</span><div class="w-full max-w-[160px]">${assignWidget}</div></div>
-                            ${p.reason && p.status !== 'Hoàn thành' ? `<div class="bg-red-50 p-2 rounded text-xs text-red-700 font-medium">⚠️ Hoãn: ${p.reason}</div>` : ''}
+                    <div class="bg-white p-4 rounded-xl shadow-xs border space-y-2 text-xs">
+                        <div class="flex justify-between font-bold"><span>${p.system}</span> ${currentUser.role==='admin'?`<button onclick="deleteProposal(${p.id})" class="text-red-500">Xóa</button>`:''}</div>
+                        <p class="font-bold text-gray-800">${p.title}</p>
+                        <p class="text-gray-600">📍 Nơi: ${p.dept} (${p.floor})</p>
+                        <p class="text-gray-400">⏱️ ${p.created_at}</p>
+                        ${p.image_url ? `<div class="pt-1">${imageColHtml}</div>` : ''}
+                        <div class="pt-2 border-t space-y-2">
+                            <div class="flex items-center justify-between"><span>Nhân sự:</span><div class="w-7/12">${assignWidget}</div></div>
                             <div class="pt-1">${actionWidget}</div>
                         </div>
                     </div>
@@ -960,7 +806,7 @@
             });
 
             tableBody.innerHTML = desktopHtml;
-            mobileCardsContainer.innerHTML = mobileHtml || '<p class="text-center text-gray-400 text-xs py-6">Không tìm thấy đề xuất.</p>';
+            mobileCardsContainer.innerHTML = mobileHtml || '<p class="text-center text-gray-400 text-xs py-6">Không có dữ liệu.</p>';
             calculateAdvancedStatistics(timeFiltered, staffUsersList);
         }
 
@@ -970,18 +816,11 @@
                 processingCount: timeFiltered.filter(p => p.staff_user === u.username && p.status === "Đang xử lý").length,
                 completedCount: timeFiltered.filter(p => p.staff_user === u.username && p.status === "Hoàn thành").length
             }));
-            document.getElementById('staff-table-body').innerHTML = staffStats.map(s => `<tr><td class="py-2 font-semibold text-gray-700">${s.name}</td><td class="py-2 text-center text-amber-600 font-bold">${s.processingCount}</td><td class="py-2 text-center text-green-600 font-bold">${s.completedCount}</td></tr>`).join('');
+            document.getElementById('staff-table-body').innerHTML = staffStats.map(s => `<tr><td class="py-2 font-semibold">${s.name}</td><td class="py-2 text-center text-amber-600">${s.processingCount}</td><td class="py-2 text-center text-green-600">${s.completedCount}</td></tr>`).join('');
 
             const systemMap = {}; const deptMap = {};
-            timeFiltered.forEach(p => {
-                systemMap[p.system] = (systemMap[p.system] || 0) + 1; deptMap[p.dept] = (deptMap[p.dept] || 0) + 1;
-            });
-            const systemStats = Object.keys(systemMap).map(k => ({ label: k, count: systemMap[k] })).sort((a,b)=>b.count-a.count);
-            const deptStats = Object.keys(deptMap).map(k => ({ label: k, count: deptMap[k] })).sort((a,b)=>b.count-a.count);
-
-            document.getElementById('system-table-body').innerHTML = systemStats.map(s => `<tr><td class="py-1.5 font-medium">${s.label}</td><td class="py-1.5 text-right font-bold text-indigo-600">${s.count} việc</td></tr>`).join('');
-            document.getElementById('dept-table-body').innerHTML = deptStats.map(d => `<tr><td class="py-1.5 font-medium">${d.label}</td><td class="py-1.5 text-right font-bold text-emerald-600">${d.count} việc</td></tr>`).join('');
-            renderAllCharts(staffStats, systemStats, deptStats);
+            timeFiltered.forEach(p => { systemMap[p.system] = (systemMap[p.system] || 0) + 1; deptMap[p.dept] = (deptMap[p.dept] || 0) + 1; });
+            renderAllCharts(staffStats, Object.keys(systemMap).map(k=>({label:k,count:systemMap[k]})), Object.keys(deptMap).map(k=>({label:k,count:deptMap[k]})));
         }
 
         function renderAllCharts(staffStats, systemStats, deptStats) {
@@ -990,24 +829,16 @@
             if (chartInstances.dept) chartInstances.dept.destroy();
 
             chartInstances.staff = new Chart(document.getElementById('staffChart').getContext('2d'), {
-                type: 'bar',
-                data: {
-                    labels: staffStats.map(s => s.name),
-                    datasets: [{ label: 'Đang làm', data: staffStats.map(s => s.processingCount), backgroundColor: '#f59e0b' }, { label: 'Xong', data: staffStats.map(s => s.completedCount), backgroundColor: '#10b981' }]
-                },
+                type: 'bar', data: { labels: staffStats.map(s => s.name), datasets: [{ label: 'Đang làm', data: staffStats.map(s => s.processingCount), backgroundColor: '#f59e0b' }, { label: 'Xong', data: staffStats.map(s => s.completedCount), backgroundColor: '#10b981' }] },
                 options: { responsive: true, maintainAspectRatio: false }
             });
-
             chartInstances.system = new Chart(document.getElementById('systemChart').getContext('2d'), {
-                type: 'doughnut',
-                data: { labels: systemStats.map(s => s.label), datasets: [{ data: systemStats.map(s => s.count), backgroundColor: ['#6366f1', '#3b82f6', '#ec4899', '#f59e0b', '#10b981'] }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 9 } } } } }
+                type: 'doughnut', data: { labels: systemStats.map(s => s.label), datasets: [{ data: systemStats.map(s => s.count), backgroundColor: ['#6366f1', '#3b82f6', '#ec4899', '#f59e0b', '#10b981'] }] },
+                options: { responsive: true, maintainAspectRatio: false }
             });
-
             chartInstances.dept = new Chart(document.getElementById('deptChart').getContext('2d'), {
-                type: 'bar',
-                data: { labels: deptStats.map(d => d.label), datasets: [{ data: deptStats.map(d => d.count), backgroundColor: '#059669' }] },
-                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                type: 'bar', data: { labels: deptStats.map(d => d.label), datasets: [{ data: deptStats.map(d => d.count), backgroundColor: '#059669' }] },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false }
             });
         }
     </script>
