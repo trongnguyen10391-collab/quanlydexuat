@@ -9,7 +9,6 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* Tối ưu hóa trải nghiệm cuộn và chạm mượt mà trên môi trường di động Safari/Chrome */
         body {
             -webkit-tap-highlight-color: transparent;
         }
@@ -27,6 +26,7 @@
 
     <div id="toast-container" class="fixed bottom-4 left-4 right-4 sm:top-4 sm:bottom-auto sm:left-auto sm:right-4 z-50 space-y-2 pointer-events-none"></div>
 
+    <!-- Màn hình Đăng Nhập -->
     <div id="login-screen" class="fixed inset-0 bg-slate-900 flex items-center justify-center z-50 p-4 overflow-y-auto">
         <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl w-full max-w-md my-auto border border-gray-100">
             <div class="text-center mb-6">
@@ -48,8 +48,10 @@
         </div>
     </div>
 
+    <!-- Ứng dụng chính -->
     <div id="main-app" class="hidden flex h-screen overflow-hidden relative">
         
+        <!-- Thanh Sidebar Menu -->
         <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col justify-between z-40 transform -translate-x-full lg:translate-x-0 lg:static lg:h-screen transition-transform duration-300 ease-in-out">
             <div class="p-5 flex flex-col flex-1 overflow-y-auto custom-scrollbar">
                 <div class="flex items-center justify-between mb-6">
@@ -84,35 +86,22 @@
 
         <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-30 hidden lg:hidden backdrop-blur-xs"></div>
 
+        <!-- Vùng nội dung bên phải -->
         <div class="flex-1 flex flex-col overflow-y-auto min-w-0 bg-gray-50">
-            <header class="bg-white shadow-xs px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b sticky top-0 z-20">
+            <header class="bg-white shadow-xs px-4 py-3 flex items-center justify-between border-b sticky top-0 z-20">
                 <div class="flex items-center gap-3">
                     <button onclick="toggleSidebar()" class="lg:hidden text-gray-600 hover:text-gray-900 bg-gray-100 p-2 rounded-xl active:scale-95 transition-transform">☰</button>
                     <h2 id="page-title" class="text-lg font-bold text-gray-800 truncate">Bảng Điều Khiển</h2>
-                </div>
-                
-                <div id="time-filter-wrapper" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-gray-50 p-1.5 rounded-xl border w-full sm:w-auto">
-                    <select id="time-range-filter" onchange="toggleCustomDateInputs()" class="border-0 bg-transparent text-xs sm:text-sm font-bold focus:ring-0 text-gray-700 cursor-pointer w-full sm:w-auto py-1.5 px-2">
-                        <option value="today">Hôm nay</option>
-                        <option value="week">Tuần này</option>
-                        <option value="month">Tháng này</option>
-                        <option value="custom">Khoảng thời gian tự chọn 📅</option>
-                    </select>
-                    
-                    <div id="custom-date-container" class="hidden flex flex-row items-center gap-1.5 pl-2 border-t sm:border-t-0 sm:border-l border-gray-200 pt-1.5 sm:pt-0 w-full sm:w-auto">
-                        <input type="date" id="filter-start-date" onchange="fetchDataFromSupabase()" class="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:ring-1 focus:ring-indigo-500 max-w-[130px] bg-white">
-                        <span class="text-xs text-gray-400 font-medium">đến</span>
-                        <input type="date" id="filter-end-date" onchange="fetchDataFromSupabase()" class="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:ring-1 focus:ring-indigo-500 max-w-[130px] bg-white">
-                    </div>
                 </div>
             </header>
 
             <main class="p-4 sm:p-6 space-y-5 max-w-7xl w-full mx-auto">
                 <div id="mobile-staff-alert" class="hidden bg-indigo-50 border border-indigo-200 rounded-xl p-3.5 flex items-start gap-2.5 text-xs text-indigo-950 font-medium shadow-2xs">
                     <span class="text-base leading-none mt-0.5">📸</span>
-                    <p><b>YÊU CẦU:</b> Nhân sự chụp/tải ảnh nghiệm thu hiện trường thực tế trước khi bấm nút "Hoàn thành" để đồng bộ dữ liệu lên đám mây.</p>
+                    <p><b>DANH SÁCH CÔNG VIỆC:</b> Dưới đây là các công việc được giao riêng cho bạn và chưa hoàn thành. Bạn có thể chụp thêm ảnh hiện trường nghiệm thu nếu cần, sau đó bấm "Hoàn thành".</p>
                 </div>
 
+                <!-- Tab: Bảng Điều Khiển -->
                 <div id="tab-dashboard" class="space-y-5">
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 border-b-4 border-blue-500">
@@ -139,6 +128,7 @@
                     </div>
                 </div>
 
+                <!-- Tab: Tiếp Nhận & Xử Lý -->
                 <div id="tab-proposals" class="space-y-5 hidden">
                     <div id="excel-export-container" class="bg-white p-4 rounded-xl shadow-xs border border-blue-100">
                         <h3 class="text-xs font-bold text-blue-900 mb-2.5 flex items-center gap-2">📊 BÁO CÁO VÀ XUẤT FILE EXCEL</h3>
@@ -214,9 +204,11 @@
                         </div>
                     </div>
 
+                    <!-- Khu vực danh sách thẻ / Bảng hiển thị -->
                     <div class="bg-white rounded-xl shadow-xs overflow-hidden border border-gray-200">
                         <div class="p-4 border-b bg-gray-50"><h3 id="table-view-title" class="text-sm font-bold text-gray-700">📋 Danh Sách Đề Xuất</h3></div>
                         
+                        <!-- Màn hình máy tính: Table View -->
                         <div class="hidden lg:block overflow-x-auto">
                             <table class="w-full text-left border-collapse">
                                 <thead>
@@ -234,10 +226,12 @@
                             </table>
                         </div>
 
+                        <!-- Màn hình Điện thoại: Card layout -->
                         <div id="proposal-mobile-cards" class="block lg:hidden divide-y divide-gray-100 bg-gray-50/50 p-2 space-y-2"></div>
                     </div>
                 </div>
 
+                <!-- Tab: Thống Kê -->
                 <div id="tab-statistics" class="hidden space-y-5">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="bg-white p-4 sm:p-5 rounded-xl shadow-xs border md:col-span-2">
@@ -275,8 +269,6 @@
     <script>
         const SUPABASE_URL = "https://ztnsmstxtgdysurnpcpn.supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_publishable_prkt5-F3meDr4hO-87x32g_icAptL6W";
-        
-        // Cấu hình URL Google Apps Script của bạn
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyOC8Slv-PTENDl2fUsTxzyfi-eccRjd2DEYX62hDBs8yaxBQSxi27p9L6e9yPPIJCx/exec"; 
 
         let supabaseClient = null;
@@ -288,23 +280,17 @@
         let proposals = [];
         let currentUser = null;
         let chartInstances = { staff: null, system: null, dept: null };
-        let temporaryCapturedPhotos = {}; // Biến toàn cục để lưu trữ ảnh tạm thời trên mobile
+        let temporaryCapturedPhotos = {}; 
 
         window.addEventListener('DOMContentLoaded', async () => {
             if (!supabaseClient) {
-                alert("Hệ thống chưa cấu hình API Supabase. Hãy điền mã cấu hình của bạn vào code!");
+                alert("Hệ thống chưa cấu hình API Supabase!");
                 return;
             }
             
-            // Đồng bộ ngày tháng dạng YYYY-MM-DD theo múi giờ địa phương máy điện thoại
             const nowLocal = new Date();
-            const year = nowLocal.getFullYear();
-            const month = String(nowLocal.getMonth() + 1).padStart(2, '0');
-            const day = String(nowLocal.getDate()).padStart(2, '0');
-            const todayStr = `${year}-${month}-${day}`;
+            const todayStr = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, '0')}-${String(nowLocal.getDate()).padStart(2, '0')}`;
             
-            document.getElementById('filter-start-date').value = todayStr;
-            document.getElementById('filter-end-date').value = todayStr;
             document.getElementById('excel-start-date').value = todayStr;
             document.getElementById('excel-end-date').value = todayStr;
 
@@ -315,7 +301,6 @@
                 try {
                     const savedUser = JSON.parse(savedUserJson);
                     const verifiedUser = appUsers.find(u => u.username === savedUser.username && u.password === savedUser.password);
-                    
                     if (verifiedUser) {
                         currentUser = verifiedUser;
                         executeLoginSuccessBehavior(verifiedUser);
@@ -365,7 +350,7 @@
                 localStorage.setItem('proposal_app_user', JSON.stringify(user));
                 executeLoginSuccessBehavior(user);
             } else {
-                alert('Tên đăng nhập hoặc mật khẩu không chính xác trên Hệ thống!');
+                alert('Tên đăng nhập hoặc mật khẩu không chính xác!');
             }
         }
 
@@ -403,7 +388,7 @@
             if (error) {
                 alert("Lỗi khi đổi mật khẩu: " + error.message);
             } else {
-                alert("Đổi mật khẩu thành công! Hệ thống sẽ đăng xuất để bạn đăng nhập lại.");
+                alert("Đổi mật khẩu thành công! Vui lòng đăng nhập lại.");
                 handleLogout();
             }
         }
@@ -435,7 +420,7 @@
 
             const exist = appUsers.find(u => u.username === username);
             if (exist) {
-                alert('Tên đăng nhập này đã tồn tại trên Database!');
+                alert('Tên đăng nhập này đã tồn tại!');
                 return;
             }
 
@@ -443,7 +428,7 @@
             if (error) {
                 alert('Lỗi khi tạo user: ' + error.message);
             } else {
-                alert('Tài khoản mới đã được lưu trực tiếp vào Database!');
+                alert('Tài khoản mới đã được lưu!');
                 document.getElementById('u-username').value = ''; document.getElementById('u-password').value = ''; document.getElementById('u-fullname').value = '';
                 await loadAllUsers();
                 render();
@@ -469,7 +454,7 @@
             if (error) {
                 alert("Lỗi khi sửa tài khoản: " + error.message);
             } else {
-                alert("Đã cập nhật thông tin tài khoản thành công!");
+                alert("Đã cập nhật thông tin tài khoản!");
                 if (currentUser.id === id) {
                     const nextUser = { ...currentUser, ...updateData };
                     localStorage.setItem('proposal_app_user', JSON.stringify(nextUser));
@@ -484,10 +469,10 @@
         async function deleteUser(id, username) {
             if (!supabaseClient) return;
             if (username === 'admin') {
-                alert("Không được phép xóa tài khoản quản trị hệ thống mặc định (admin)!");
+                alert("Không được phép xóa tài khoản admin mặc định!");
                 return;
             }
-            if (confirm(`Bạn chắc chắn muốn XÓA VĨNH VIỄN tài khoản [${username}] khỏi database?`)) {
+            if (confirm(`Bạn chắc chắn muốn XÓA tài khoản [${username}]?`)) {
                 const { error } = await supabaseClient.from('users').delete().eq('id', id);
                 if (error) {
                     alert("Lỗi khi xóa tài khoản: " + error.message);
@@ -500,46 +485,6 @@
                     }
                 }
             }
-        }
-
-        function toggleCustomDateInputs() {
-            const filterSelect = document.getElementById('time-range-filter').value;
-            const customContainer = document.getElementById('custom-date-container');
-            if (filterSelect === 'custom') customContainer.classList.remove('hidden');
-            else customContainer.classList.add('hidden');
-            render();
-        }
-
-        // TỐI ƯU: Sửa lỗi lọc ngày không khớp múi giờ Việt Nam (UTC+7) trên điện thoại
-        function isProposalInTimeRange(createdStr, range) {
-            if (!createdStr) return false;
-            const rawDate = createdStr.split(' ')[0]; 
-            
-            const nowLocal = new Date();
-            const year = nowLocal.getFullYear();
-            const month = String(nowLocal.getMonth() + 1).padStart(2, '0');
-            const day = String(nowLocal.getDate()).padStart(2, '0');
-            const todayStr = `${year}-${month}-${day}`;
-
-            if (range === 'today') {
-                return rawDate === todayStr;
-            }
-            if (range === 'week') {
-                const pDate = new Date(rawDate);
-                const diffTime = Math.abs(nowLocal - pDate);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                return diffDays <= 7;
-            }
-            if (range === 'month') {
-                return rawDate.startsWith(`${year}-${month}`);
-            }
-            if (range === 'custom') {
-                const start = document.getElementById('filter-start-date').value;
-                const end = document.getElementById('filter-end-date').value;
-                if (!start || !end) return true;
-                return rawDate >= start && rawDate <= end;
-            }
-            return false;
         }
 
         function switchTab(tabName) {
@@ -596,33 +541,35 @@
             else await fetchDataFromSupabase();
         }
 
-        // HÀM MỚI: Xử lý đọc file ảnh chuyển thành Base64 ngay khi chụp xong để không lo bị xoá RAM
         function handlePhotoCaptured(id, inputElement) {
-            if (!inputElement.files || inputElement.files.length === 0) return;
+            if (!inputElement.files || inputElement.files.length === 0) {
+                delete temporaryCapturedPhotos[id];
+                const previewDiv = document.getElementById(`photo-preview-${id}`);
+                if (previewDiv) previewDiv.innerHTML = '<span class="text-gray-400 italic">❌ Đã hủy chọn ảnh</span>';
+                return;
+            }
             
             const file = inputElement.files[0];
             const previewDiv = document.getElementById(`photo-preview-${id}`);
-            if (previewDiv) previewDiv.innerHTML = '<span class="text-amber-500 font-bold">⏳ Đang đọc file ảnh từ Camera...</span>';
+            if (previewDiv) previewDiv.innerHTML = '<span class="text-amber-500 font-bold">⏳ Đang đọc file ảnh...</span>';
 
             const reader = new FileReader();
             reader.onload = function(eEvent) {
-                // Lưu thông tin ảnh đã mã hoá vào biến cục bộ
                 temporaryCapturedPhotos[id] = {
                     base64: eEvent.target.result.split(',')[1],
                     mimeType: file.type,
                     fileName: `Anh_NghiemThu_${id}_${Date.now()}.jpg`
                 };
                 if (previewDiv) {
-                    previewDiv.innerHTML = `<span class="text-green-600 font-bold">✅ Ảnh đã sẵn sàng (${(file.size/1024/1024).toFixed(2)} MB). Hãy bấm Hoàn Thành!</span>`;
+                    previewDiv.innerHTML = `<span class="text-green-600 font-bold">✅ Ảnh đã sẵn sàng!</span>`;
                 }
             };
             reader.onerror = function() {
-                if (previewDiv) previewDiv.innerHTML = '<span class="text-red-600 font-bold">❌ Lỗi không thể đọc tệp tin hình ảnh.</span>';
+                if (previewDiv) previewDiv.innerHTML = '<span class="text-red-600 font-bold">❌ Lỗi đọc ảnh.</span>';
             };
             reader.readAsDataURL(file);
         }
 
-        // TỐI ƯU HÀM XỬ LÝ ẢNH & ĐỒNG BỘ ĐIỆN THOẠI KHÔNG BỊ TREO
         async function staffAction(id, action) {
             if (!supabaseClient) return;
             const now = new Date();
@@ -644,59 +591,63 @@
                 }
             } 
             else if (action === 'complete') {
-                // Thay vì lấy trực tiếp từ fileInput.files, chúng ta lấy từ bộ nhớ tạm toàn cục
                 const capturedData = temporaryCapturedPhotos[id];
-                if (!capturedData) {
-                    alert("⚠️ BẮT BUỘC: Hãy chụp ảnh nghiệm thu bằng camera trước!");
-                    return;
-                }
-
                 const btnComplete = document.getElementById(`btn-comp-${id}`);
                 const btnIncomplete = document.getElementById(`btn-inc-${id}`);
                 
-                // Trực quan hóa tiến trình cho nhân viên thấy
-                if (btnComplete) { btnComplete.innerText = "⏳ Đang tải lên Drive..."; btnComplete.disabled = true; }
+                if (btnComplete) { 
+                    btnComplete.innerText = capturedData ? "⏳ Đang tải lên Drive..." : "⏳ Đang lưu kết quả..."; 
+                    btnComplete.disabled = true; 
+                }
                 if (btnIncomplete) btnIncomplete.disabled = true;
 
-                try {
-                    // Đăng dữ liệu qua Google Apps Script Web App sử dụng dữ liệu từ bộ nhớ tạm
-                    const response = await fetch(GOOGLE_SCRIPT_URL, {
-                        method: 'POST',
-                        mode: 'cors',
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({
-                            base64: capturedData.base64,
-                            mimeType: capturedData.mimeType,
-                            fileName: capturedData.fileName
-                        })
-                    });
-                    
-                    if (!response.ok) throw new Error("Google Script trả về lỗi mạng!");
+                let driveUrl = "";
 
-                    const result = await response.json();
-                    
-                    if (result && (result.status === "success" || result.url)) {
-                        // Cập nhật lên cơ sở dữ liệu Supabase
-                        const { error } = await supabaseClient.from('proposals').update({ 
-                            status: "Hoàn thành", 
-                            completed_at: timeNow, 
-                            reason: "",
-                            image_url: result.url
-                        }).eq('id', id);
-
-                        if (error) {
-                            alert("Ảnh đã lên Drive nhưng lỗi lưu Supabase: " + error.message);
+                // Chỉ thực hiện tải lên Google Drive nếu người dùng có chọn ảnh
+                if (capturedData) {
+                    try {
+                        const response = await fetch(GOOGLE_SCRIPT_URL, {
+                            method: 'POST',
+                            mode: 'cors',
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            body: JSON.stringify({
+                                base64: capturedData.base64,
+                                mimeType: capturedData.mimeType,
+                                fileName: capturedData.fileName
+                            })
+                        });
+                        
+                        if (!response.ok) throw new Error("Google Script lỗi mạng!");
+                        const result = await response.json();
+                        
+                        if (result && (result.status === "success" || result.url)) {
+                            driveUrl = result.url;
                         } else {
-                            alert("✅ Thành công! Đã nghiệm thu và đồng bộ ảnh Drive.");
-                            delete temporaryCapturedPhotos[id]; // Xoá sạch ảnh tạm của đề xuất này sau khi thành công
+                            alert("⚠️ Lỗi lưu Drive: " + (result.message || "Không lưu được ảnh. Hệ thống sẽ tiếp tục lưu trạng thái hoàn thành không ảnh."));
                         }
+                    } catch (err) {
+                        alert("⚠️ Đường truyền gián đoạn khi tải ảnh: " + err.message + ". Hệ thống sẽ lưu trạng thái hoàn thành không ảnh.");
+                    }
+                }
+
+                // Cập nhật lên Supabase (Có link ảnh hoặc không có link ảnh tùy thuộc vào việc chụp ảnh)
+                try {
+                    const { error } = await supabaseClient.from('proposals').update({ 
+                        status: "Hoàn thành", 
+                        completed_at: timeNow, 
+                        reason: "",
+                        image_url: driveUrl
+                    }).eq('id', id);
+
+                    if (error) {
+                        alert("Lỗi lưu Supabase: " + error.message);
                     } else {
-                        alert("❌ Drive từ chối lưu: " + (result.message || "Lỗi cấu hình script"));
+                        alert(capturedData ? "✅ Thành công! Đã hoàn thành và lưu ảnh." : "✅ Thành công! Đã hoàn thành (Không kèm ảnh).");
+                        if (capturedData) delete temporaryCapturedPhotos[id];
                     }
                 } catch (err) {
-                    alert("❌ Đường truyền gián đoạn: " + err.message);
+                    alert("❌ Lỗi hệ thống: " + err.message);
                 } finally {
-                    // Bắt buộc tải lại dữ liệu để đồng bộ lại giao diện điện thoại
                     await fetchDataFromSupabase();
                 }
             }
@@ -704,7 +655,7 @@
 
         async function deleteProposal(id) {
             if (!supabaseClient) return;
-            if (confirm('Bạn chắc chắn muốn XÓA VĨNH VIỄN đề xuất này khỏi tệp DB lưu trữ?')) {
+            if (confirm('Bạn chắc chắn muốn XÓA VĨNH VIỄN đề xuất này?')) {
                 const { error } = await supabaseClient.from('proposals').delete().eq('id', id);
                 if (error) alert("Lỗi xóa: " + error.message);
                 else await fetchDataFromSupabase();
@@ -730,20 +681,21 @@
 
         function render() {
             if (!currentUser) return;
-            const timeRange = document.getElementById('time-range-filter').value;
-            let timeFiltered = proposals.filter(p => isProposalInTimeRange(p.created_at, timeRange));
 
-            let kanbanData = [...timeFiltered];
-            if (currentUser.role === 'staff') kanbanData = timeFiltered.filter(p => p.staff_user === currentUser.username);
+            let baseData = [...proposals]; 
 
-            document.getElementById('kpi-total').innerText = kanbanData.length;
-            document.getElementById('kpi-pending').innerText = kanbanData.filter(p => p.status === "Chờ xác nhận").length;
-            document.getElementById('kpi-processing').innerText = kanbanData.filter(p => p.status === "Đang xử lý").length;
-            document.getElementById('kpi-completed').innerText = kanbanData.filter(p => p.status === "Hoàn thành").length;
+            if (currentUser.role === 'staff') {
+                baseData = baseData.filter(p => p.staff_user === currentUser.username && p.status !== "Hoàn thành");
+            }
+
+            document.getElementById('kpi-total').innerText = baseData.length;
+            document.getElementById('kpi-pending').innerText = baseData.filter(p => p.status === "Chờ xác nhận").length;
+            document.getElementById('kpi-processing').innerText = baseData.filter(p => p.status === "Đang xử lý").length;
+            document.getElementById('kpi-completed').innerText = baseData.filter(p => p.status === "Hoàn thành").length;
 
             const kanbanContainer = document.getElementById('dashboard-kanban');
             kanbanContainer.innerHTML = ['Chờ xác nhận', 'Đang xử lý', 'Hoàn thành'].map(st => {
-                const list = kanbanData.filter(p => p.status === st);
+                const list = baseData.filter(p => p.status === st);
                 return `
                     <div class="bg-slate-50 p-3 rounded-xl border border-gray-200">
                         <div class="flex justify-between items-center mb-2">
@@ -751,17 +703,15 @@
                             <span class="bg-slate-200 text-gray-700 text-xs px-2 py-0.5 rounded-full font-bold">${list.length}</span>
                         </div>
                         <div class="space-y-2">
-                            ${list.map(p => {
-                                return `
-                                    <div class="bg-white p-3 rounded-xl shadow-2xs border-l-4 border-indigo-500 text-xs space-y-1">
-                                        <span class="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-bold text-[10px]">${p.system}</span>
-                                        <p class="font-bold text-gray-800 mt-1">${p.title}</p>
-                                        <p class="text-gray-500 text-[11px]">📍 ${p.dept} (${p.floor})</p>
-                                        ${p.reason && p.status !== 'Hoàn thành' ? `<p class="mt-1 bg-red-50 text-red-700 p-1 rounded font-medium">⚠️ Hoãn: ${p.reason}</p>` : ''}
-                                        ${p.image_url ? `<a href="${p.image_url}" target="_blank" class="text-blue-600 block mt-1 hover:underline font-bold">🖼️ Xem ảnh Drive</a>` : ''}
-                                    </div>
-                                `;
-                            }).join('')}
+                            ${list.map(p => `
+                                <div class="bg-white p-3 rounded-xl shadow-2xs border-l-4 border-indigo-500 text-xs space-y-1">
+                                    <span class="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-bold text-[10px]">${p.system}</span>
+                                    <p class="font-bold text-gray-800 mt-1">${p.title}</p>
+                                    <p class="text-gray-500 text-[11px]">📍 ${p.dept} (${p.floor})</p>
+                                    ${p.reason && p.status !== 'Hoàn thành' ? `<p class="mt-1 bg-red-50 text-red-700 p-1 rounded font-medium">⚠️ Hoãn: ${p.reason}</p>` : ''}
+                                    ${p.image_url ? `<a href="${p.image_url}" target="_blank" class="text-blue-600 block mt-1 hover:underline font-bold">🖼️ Xem ảnh Drive</a>` : ''}
+                                </div>
+                            `).join('')}
                         </div>
                     </div>
                 `;
@@ -803,7 +753,7 @@
                 if (adminForm) adminForm.style.display='none'; 
                 if (adminUserForm) adminUserForm.style.display='none'; 
                 if (thActions) thActions.style.display='none';
-                tableViewTitle.innerText = "📋 Công Việc Được Giao Cho Bạn";
+                tableViewTitle.innerText = "📋 Công Việc Được Giao (Chưa Hoàn Thành)";
             }
 
             const tableBody = document.getElementById('proposal-table-body');
@@ -812,8 +762,7 @@
 
             let desktopHtml = ''; let mobileHtml = '';
 
-            timeFiltered.forEach(p => {
-                if (currentUser.role === 'staff' && p.staff_user !== currentUser.username) return;
+            baseData.forEach(p => {
                 let assignWidget = '';
                 if (currentUser.role === 'admin' || currentUser.role === 'manager') {
                     assignWidget = `<select onchange="assignStaff(${p.id}, this.value)" class="border text-xs rounded-lg p-1.5 bg-white w-full">`;
@@ -831,11 +780,11 @@
                     } else if (p.status === 'Đang xử lý') {
                         actionWidget = `
                             <div class="space-y-2.5 bg-indigo-50/50 p-2.5 rounded-xl border border-indigo-200">
-                                <label class="block text-[10px] font-black text-indigo-800 uppercase tracking-wide">📷 Chụp ảnh hiện trường nghiệm thu:</label>
+                                <label class="block text-[10px] font-black text-indigo-800 uppercase tracking-wide">📷 Ảnh hiện trường nghiệm thu (Không bắt buộc):</label>
                                 <input type="file" id="file-upload-${p.id}" accept="image/*" capture="environment" onchange="handlePhotoCaptured(${p.id}, this)" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer"/>
                                 
                                 <div id="photo-preview-${p.id}" class="text-[11px] font-bold text-gray-500">
-                                    ${temporaryCapturedPhotos[p.id] ? '<span class="text-green-600">✅ Đã lưu ảnh tạm thời! Có thể bấm Hoàn Thành.</span>' : '❌ Chưa có ảnh'}
+                                    ${temporaryCapturedPhotos[p.id] ? '<span class="text-green-600">✅ Đã chọn ảnh.</span>' : '<span class="text-gray-400 italic">Không có ảnh đính kèm</span>'}
                                 </div>
 
                                 <div class="flex gap-2">
@@ -844,8 +793,6 @@
                                 </div>
                             </div>
                         `;
-                    } else {
-                        actionWidget = `<span class="text-green-700 font-bold block text-center bg-green-100/70 py-1.5 rounded-lg text-xs">✅ Hoàn tất nghiệp vụ</span>`;
                     }
                 } else {
                     actionWidget = `<span class="font-semibold px-2 py-1.5 rounded-lg block text-center text-[11px] ${p.status==='Hoàn thành'?'bg-green-100 text-green-800':p.status==='Đang xử lý'?'bg-indigo-100 text-indigo-800':'bg-yellow-100 text-yellow-800'}">${p.status}</span>`;
@@ -856,7 +803,7 @@
                     reasonWidget = `<span class="text-[10px] text-red-600 block mt-1 font-medium bg-red-50 p-1 rounded">Lý do: ${p.reason}</span>`;
                 }
 
-                let imageColHtml = p.image_url ? `<a href="${p.image_url}" target="_blank" class="text-blue-600 hover:underline font-bold block mt-1">🖼️ Xem ảnh Drive</a>` : `<span class="text-gray-400 italic">Chưa có ảnh</span>`;
+                let imageColHtml = p.image_url ? `<a href="${p.image_url}" target="_blank" class="text-blue-600 hover:underline font-bold block mt-1">🖼️ Xem ảnh Drive</a>` : `<span class="text-gray-400 italic">Không có ảnh</span>`;
 
                 desktopHtml += `
                     <tr class="hover:bg-gray-50 border-b">
@@ -882,7 +829,7 @@
                         </div>
                         <div class="space-y-2">
                             <div class="flex items-center gap-2 justify-between"><span class="text-xs text-gray-400 font-medium">Nhân sự:</span><div class="w-full max-w-[160px]">${assignWidget}</div></div>
-                            ${p.image_url ? `<div class="flex items-center gap-2 justify-between"><span class="text-xs text-gray-400 font-medium">Ảnh thực tế:</span><div>${imageColHtml}</div></div>` : ''}
+                            <div class="flex items-center gap-2 justify-between"><span class="text-xs text-gray-400 font-medium">Ảnh thực tế:</span><div>${imageColHtml}</div></div>
                             ${p.reason && p.status !== 'Hoàn thành' ? `<div class="bg-red-50 p-2 rounded-lg text-xs text-red-700 font-medium">⚠️ Hoãn: ${p.reason}</div>` : ''}
                             <div class="pt-1">${actionWidget}</div>
                         </div>
@@ -891,20 +838,20 @@
             });
 
             tableBody.innerHTML = desktopHtml;
-            mobileCardsContainer.innerHTML = mobileHtml || '<p class="text-center text-gray-400 text-xs py-8">Không có đề xuất nào trong khoảng thời gian này.</p>';
-            calculateAdvancedStatistics(timeFiltered, staffUsersList);
+            mobileCardsContainer.innerHTML = mobileHtml || '<p class="text-center text-gray-400 text-xs py-8">Bạn không có công việc nào cần xử lý.</p>';
+            calculateAdvancedStatistics(baseData, staffUsersList);
         }
 
-        function calculateAdvancedStatistics(timeFiltered, staffUsersList) {
+        function calculateAdvancedStatistics(baseData, staffUsersList) {
             const staffStats = staffUsersList.map(u => ({
                 name: u.name,
-                processingCount: timeFiltered.filter(p => p.staff_user === u.username && p.status === "Đang xử lý").length,
-                completedCount: timeFiltered.filter(p => p.staff_user === u.username && p.status === "Hoàn thành").length
+                processingCount: baseData.filter(p => p.staff_user === u.username && p.status === "Đang xử lý").length,
+                completedCount: baseData.filter(p => p.staff_user === u.username && p.status === "Hoàn thành").length
             }));
             document.getElementById('staff-table-body').innerHTML = staffStats.map(s => `<tr><td class="py-2 font-semibold text-gray-700">${s.name}</td><td class="py-2 text-center text-amber-600 font-bold">${s.processingCount}</td><td class="py-2 text-center text-green-600 font-bold">${s.completedCount}</td></tr>`).join('');
 
             const systemMap = {}; const deptMap = {};
-            timeFiltered.forEach(p => {
+            baseData.forEach(p => {
                 systemMap[p.system] = (systemMap[p.system] || 0) + 1; deptMap[p.dept] = (deptMap[p.dept] || 0) + 1;
             });
             const systemStats = Object.keys(systemMap).map(k => ({ label: k, count: systemMap[k] })).sort((a,b)=>b.count-a.count);
