@@ -98,6 +98,24 @@
                 </div>
 
                 <div id="tab-dashboard" class="space-y-5">
+                    <!-- Bộ lọc ngày của bảng điều khiển -->
+                    <div class="bg-white p-4 rounded-xl shadow-xs border border-indigo-100">
+                        <h3 class="text-xs font-bold text-indigo-900 mb-2.5 flex items-center gap-2">🔍 BỘ LỌC THỜI GIAN BẢNG ĐIỀU KHIỂN</h3>
+                        <div class="flex flex-wrap items-end gap-3">
+                            <div class="flex-1 min-w-[130px]">
+                                <label class="block text-[10px] font-bold text-gray-600 mb-1">Từ ngày</label>
+                                <input type="date" id="dashboard-start-date" class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs bg-white" onchange="render()">
+                            </div>
+                            <div class="flex-1 min-w-[130px]">
+                                <label class="block text-[10px] font-bold text-gray-600 mb-1">Đến ngày</label>
+                                <input type="date" id="dashboard-end-date" class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs bg-white" onchange="render()">
+                            </div>
+                            <button onclick="resetDashboardDateFilter()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                                🔄 Hôm nay
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 border-b-4 border-blue-500">
                             <p class="text-[10px] sm:text-xs text-gray-400 font-bold uppercase tracking-wider">Tổng tiếp nhận</p>
@@ -223,6 +241,24 @@
                 </div>
 
                 <div id="tab-statistics" class="hidden space-y-5">
+                    <!-- Bộ lọc ngày của tab Thống kê -->
+                    <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-200">
+                        <h3 class="text-xs font-bold text-gray-700 mb-2.5 flex items-center gap-2">🔍 BỘ LỌC THỜI GIAN THỐNG KÊ TỔNG HỢP</h3>
+                        <div class="flex flex-wrap items-end gap-3">
+                            <div class="flex-1 min-w-[130px]">
+                                <label class="block text-[10px] font-bold text-gray-600 mb-1">Từ ngày</label>
+                                <input type="date" id="stats-start-date" class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs bg-white" onchange="render()">
+                            </div>
+                            <div class="flex-1 min-w-[130px]">
+                                <label class="block text-[10px] font-bold text-gray-600 mb-1">Đến ngày</label>
+                                <input type="date" id="stats-end-date" class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs bg-white" onchange="render()">
+                            </div>
+                            <button onclick="resetStatsDateFilter()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                                🔄 Đặt lại bộ lọc ngày
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="bg-white p-4 sm:p-5 rounded-xl shadow-xs border md:col-span-2">
                             <h3 class="text-sm font-bold mb-4 text-gray-700">📊 Hiệu suất xử lý nhân sự</h3>
@@ -281,8 +317,18 @@
             const nowLocal = new Date();
             const todayStr = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, '0')}-${String(nowLocal.getDate()).padStart(2, '0')}`;
             
+            // Thiết lập giá trị mặc định cho tab Tiếp Nhận (Excel Export)
             document.getElementById('excel-start-date').value = todayStr;
             document.getElementById('excel-end-date').value = todayStr;
+
+            // Thiết lập mặc định bảng điều khiển lọc theo ngày hiện tại
+            document.getElementById('dashboard-start-date').value = todayStr;
+            document.getElementById('dashboard-end-date').value = todayStr;
+
+            // Thiết lập mặc định tab thống kê tổng hợp lọc theo tháng hiện tại (hoặc ngày hiện tại)
+            const firstDayOfMonthStr = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, '0')}-01`;
+            document.getElementById('stats-start-date').value = firstDayOfMonthStr;
+            document.getElementById('stats-end-date').value = todayStr;
 
             await loadAllUsers();
 
@@ -301,6 +347,25 @@
                 }
             }
         });
+
+        // Hàm khôi phục lại bộ lọc ngày bảng điều khiển về Hôm nay
+        function resetDashboardDateFilter() {
+            const nowLocal = new Date();
+            const todayStr = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, '0')}-${String(nowLocal.getDate()).padStart(2, '0')}`;
+            document.getElementById('dashboard-start-date').value = todayStr;
+            document.getElementById('dashboard-end-date').value = todayStr;
+            render();
+        }
+
+        // Hàm khôi phục bộ lọc ngày tab thống kê
+        function resetStatsDateFilter() {
+            const nowLocal = new Date();
+            const todayStr = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, '0')}-${String(nowLocal.getDate()).padStart(2, '0')}`;
+            const firstDayOfMonthStr = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, '0')}-01`;
+            document.getElementById('stats-start-date').value = firstDayOfMonthStr;
+            document.getElementById('stats-end-date').value = todayStr;
+            render();
+        }
 
         // Hàm hỗ trợ lấy chuỗi ngày dạng YYYY-MM-DD từ mọi nguồn thời gian (ISO Supabase hoặc chuỗi tự tạo)
         function getLocalDateString(dateStr) {
@@ -685,20 +750,44 @@
         function render() {
             if (!currentUser) return;
 
-            let baseData = [...proposals]; 
-
-            if (currentUser.role === 'staff') {
-                baseData = baseData.filter(p => p.staff_user === currentUser.username && p.status !== "Hoàn thành");
+            // --- XỬ LÝ LỌC THEO THỜI GIAN TRÊN BẢNG ĐIỀU KHIỂN ---
+            let dashboardFilteredData = [...proposals];
+            const dashStart = document.getElementById('dashboard-start-date').value;
+            const dashEnd = document.getElementById('dashboard-end-date').value;
+            if (dashStart && dashEnd) {
+                dashboardFilteredData = dashboardFilteredData.filter(p => {
+                    const pd = getLocalDateString(p.created_at);
+                    return pd >= dashStart && pd <= dashEnd;
+                });
             }
 
-            document.getElementById('kpi-total').innerText = baseData.length;
-            document.getElementById('kpi-pending').innerText = baseData.filter(p => p.status === "Chờ xác nhận").length;
-            document.getElementById('kpi-processing').innerText = baseData.filter(p => p.status === "Đang xử lý").length;
-            document.getElementById('kpi-completed').innerText = baseData.filter(p => p.status === "Hoàn thành").length;
+            // --- XỬ LÝ LỌC THEO THỜI GIAN TRÊN THỐNG KÊ TỔNG HỢP ---
+            let statsFilteredData = [...proposals];
+            const statsStart = document.getElementById('stats-start-date').value;
+            const statsEnd = document.getElementById('stats-end-date').value;
+            if (statsStart && statsEnd) {
+                statsFilteredData = statsFilteredData.filter(p => {
+                    const pd = getLocalDateString(p.created_at);
+                    return pd >= statsStart && pd <= statsEnd;
+                });
+            }
+
+            // Mặc định cho Nhân viên chỉ xem phần việc được phân công (Không áp dụng bộ lọc ngày để tránh bỏ lỡ việc cũ chưa xong)
+            let baseData = [...proposals]; 
+            if (currentUser.role === 'staff') {
+                baseData = baseData.filter(p => p.staff_user === currentUser.username && p.status !== "Hoàn thành");
+                dashboardFilteredData = [...baseData];
+            }
+
+            // Cập nhật KPIs trên Dashboard dựa trên dữ liệu đã lọc của Dashboard
+            document.getElementById('kpi-total').innerText = dashboardFilteredData.length;
+            document.getElementById('kpi-pending').innerText = dashboardFilteredData.filter(p => p.status === "Chờ xác nhận").length;
+            document.getElementById('kpi-processing').innerText = dashboardFilteredData.filter(p => p.status === "Đang xử lý").length;
+            document.getElementById('kpi-completed').innerText = dashboardFilteredData.filter(p => p.status === "Hoàn thành").length;
 
             const kanbanContainer = document.getElementById('dashboard-kanban');
             kanbanContainer.innerHTML = ['Chờ xác nhận', 'Đang xử lý', 'Hoàn thành'].map(st => {
-                const list = baseData.filter(p => p.status === st);
+                const list = dashboardFilteredData.filter(p => p.status === st);
                 return `
                     <div class="bg-slate-50 p-3 rounded-xl border border-gray-200">
                         <div class="flex justify-between items-center mb-2">
@@ -765,6 +854,7 @@
 
             let desktopHtml = ''; let mobileHtml = '';
 
+            // Danh sách hiển thị tại tab 2 (Tiếp nhận & Xử lý) lấy từ baseData gốc để không bị che khuất bởi bộ lọc Dashboard
             baseData.forEach(p => {
                 let assignWidget = '';
                 if (currentUser.role === 'admin' || currentUser.role === 'manager') {
@@ -842,19 +932,21 @@
 
             tableBody.innerHTML = desktopHtml;
             mobileCardsContainer.innerHTML = mobileHtml || '<p class="text-center text-gray-400 text-xs py-8">Bạn không có công việc nào cần xử lý.</p>';
-            calculateAdvancedStatistics(baseData, staffUsersList);
+            
+            // Tính toán biểu đồ dựa trên dữ liệu lọc của Thống kê (statsFilteredData)
+            calculateAdvancedStatistics(statsFilteredData, staffUsersList);
         }
 
-        function calculateAdvancedStatistics(baseData, staffUsersList) {
+        function calculateAdvancedStatistics(statsFilteredData, staffUsersList) {
             const staffStats = staffUsersList.map(u => ({
                 name: u.name,
-                processingCount: baseData.filter(p => p.staff_user === u.username && p.status === "Đang xử lý").length,
-                completedCount: baseData.filter(p => p.staff_user === u.username && p.status === "Hoàn thành").length
+                processingCount: statsFilteredData.filter(p => p.staff_user === u.username && p.status === "Đang xử lý").length,
+                completedCount: statsFilteredData.filter(p => p.staff_user === u.username && p.status === "Hoàn thành").length
             }));
             document.getElementById('staff-table-body').innerHTML = staffStats.map(s => `<tr><td class="py-2 font-semibold text-gray-700">${s.name}</td><td class="py-2 text-center text-amber-600 font-bold">${s.processingCount}</td><td class="py-2 text-center text-green-600 font-bold">${s.completedCount}</td></tr>`).join('');
 
             const systemMap = {}; const deptMap = {};
-            baseData.forEach(p => {
+            statsFilteredData.forEach(p => {
                 systemMap[p.system] = (systemMap[p.system] || 0) + 1; deptMap[p.dept] = (deptMap[p.dept] || 0) + 1;
             });
             const systemStats = Object.keys(systemMap).map(k => ({ label: k, count: systemMap[k] })).sort((a,b)=>b.count-a.count);
