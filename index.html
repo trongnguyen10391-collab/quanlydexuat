@@ -263,7 +263,7 @@
         const SUPABASE_ANON_KEY = "sb_publishable_prkt5-F3meDr4hO-87x32g_icAptL6W";
         
         // ⚠️ DÁN ĐƯỜNG DẪN WEB APP GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxvGa88oMYm9nPyCLeyDWIaV5Bu0DRtsNQ-U1R6xI4RqUDvQy16NTqOcSnbK0bZXsaR/exec"; 
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyOC8Slv-PTENDl2fUsTxzyfi-eccRjd2DEYX62hDBs8yaxBQSxi27p9L6e9yPPIJCx/exec"; 
 
         let supabaseClient = null;
         if (SUPABASE_URL && SUPABASE_ANON_KEY) {
@@ -581,15 +581,15 @@
                     return alert("Phải có lý do báo hoãn!");
                 }
             } 
-            else if (action === 'complete') {
+           else if (action === 'complete') {
                 const fileInput = document.getElementById(`file-upload-${id}`);
                 if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
                     alert("⚠️ BẮT BUỘC: Bạn phải chụp ảnh hoặc chọn ảnh nghiệm thu trước khi bấm Hoàn thành!");
                     return;
                 }
 
-                if (GOOGLE_SCRIPT_URL === "" || GOOGLE_SCRIPT_URL.includes("ĐIỀN_URL_APPS_SCRIPT")) {
-                    alert("Lỗi hệ thống: Admin chưa thiết lập URL Google Apps Script trong mã nguồn!");
+                if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("https://script.google.com/macros/s/AKfycbyOC8Slv-PTENDl2fUsTxzyfi-eccRjd2DEYX62hDBs8yaxBQSxi27p9L6e9yPPIJCx/exec") || GOOGLE_SCRIPT_URL === "") {
+                    alert("Lỗi hệ thống: Admin chưa thiết lập URL Google Apps Script hợp lệ trong mã nguồn!");
                     return;
                 }
 
@@ -597,17 +597,23 @@
                 const btnComplete = document.getElementById(`btn-comp-${id}`);
                 const btnIncomplete = document.getElementById(`btn-inc-${id}`);
                 
-                btnComplete.innerText = "⏳ Đang lưu ảnh vào Drive...";
+                // Thay đổi trạng thái nút để người dùng không bấm lại nhiều lần
+                btnComplete.innerText = "⏳ Đang tải ảnh lên Drive...";
                 btnComplete.disabled = true;
                 if (btnIncomplete) btnIncomplete.disabled = true;
 
                 const reader = new FileReader();
                 reader.onload = async function(eEvent) {
-                    const base64String = eEvent.target.result.split(',')[1];
-                    
                     try {
+                        const base64String = eEvent.target.result.split(',')[1];
+                        
+                        // Gửi dữ liệu đến Google Apps Script
                         const response = await fetch(GOOGLE_SCRIPT_URL, {
                             method: 'POST',
+                            mode: 'cors', // Đảm bảo bật chế độ CORS khi gọi cross-domain
+                            headers: {
+                                'Content-Type': 'text/plain;charset=utf-8', // Tránh kích hoạt preflight OPTIONS phức tạp trên Apps Script
+                            },
                             body: JSON.stringify({
                                 base64: base64String,
                                 mimeType: file.type,
@@ -615,33 +621,49 @@
                             })
                         });
                         
+                        // Kiểm tra phản hồi có hợp lệ không
+                        if (!response.ok) {
+                            throw new Error(`Google Script phản hồi lỗi HTTP: ${response.status}`);
+                        }
+
                         const result = await response.json();
+                        console.log("Kết quả từ Google Drive:", result); // Log kiểm tra dữ liệu trả về
                         
-                        if (result.status === "success") {
+                        if (result && (result.status === "success" || result.url)) {
+                            // Tiến hành cập nhật Database Supabase sau khi upload ảnh lên Drive thành công
                             const { error } = await supabaseClient.from('proposals').update({ 
                                 status: "Hoàn thành", 
                                 completed_at: timeNow, 
                                 reason: "",
-                                image_url: result.url
+                                image_url: result.url || result.message
                             }).eq('id', id);
 
                             if (error) {
-                                alert("Lỗi lưu DB: " + error.message);
+                                alert("Lỗi lưu DB Supabase: " + error.message);
                             } else {
-                                alert("✅ Tuyệt vời! Đã chụp ảnh, lưu lên Google Drive và Hoàn tất công việc!");
+                                alert("✅ Thành công! Đã lưu ảnh lên Drive và hoàn tất đề xuất!");
                             }
                         } else {
-                            alert("❌ Không thể tải ảnh lên Drive: " + result.message);
+                            alert("❌ Google Drive từ chối lưu ảnh: " + (result.message || "Không rõ nguyên nhân"));
                         }
                     } catch (err) {
-                        alert("❌ Lỗi đường truyền mạng: Không thể kết nối tới Google Drive. " + err.message);
+                        console.error("Chi tiết lỗi:", err);
+                        alert("❌ Lỗi xử lý dữ liệu hoặc đường truyền: " + err.message);
                     } finally {
+                        // Tải lại dữ liệu và giao diện sau khi hoàn thành (dù thành công hay thất bại)
                         await fetchDataFromSupabase();
                     }
                 };
+                
+                reader.onerror = function() {
+                    alert("Lỗi khi đọc file ảnh từ thiết bị.");
+                    btnComplete.innerText = "Hoàn Thành";
+                    btnComplete.disabled = false;
+                    if (btnIncomplete) btnIncomplete.disabled = false;
+                };
+
                 reader.readAsDataURL(file);
             }
-        }
 
         async function deleteProposal(id) {
             if (!supabaseClient) return;
