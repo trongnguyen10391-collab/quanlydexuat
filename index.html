@@ -11,6 +11,9 @@
 </head>
 <body class="bg-gray-100 font-sans text-gray-800 antialiased">
 
+    <!-- Container thông báo nổi (Toast Notification) -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2 pointer-events-none"></div>
+
     <div id="login-screen" class="fixed inset-0 bg-slate-900 flex items-center justify-center z-50 p-4 overflow-y-auto">
         <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl w-full max-w-md my-auto">
             <div class="text-center mb-6">
@@ -75,7 +78,8 @@
                     <h2 id="page-title" class="text-lg font-bold text-gray-800 truncate">Bảng Điều Khiển</h2>
                 </div>
                 
-                <div class="flex flex-wrap items-center gap-2 bg-gray-50 p-1.5 rounded-xl border w-full sm:w-auto">
+                <!-- Thanh chọn khoảng thời gian: Ẩn đi đối với tài khoản nhân viên thực hiện -->
+                <div id="time-filter-wrapper" class="flex flex-wrap items-center gap-2 bg-gray-50 p-1.5 rounded-xl border w-full sm:w-auto">
                     <select id="time-range-filter" onchange="toggleCustomDateInputs()" class="border-0 bg-transparent text-xs sm:text-sm font-medium focus:ring-0 text-gray-700 cursor-pointer w-full sm:w-auto py-1">
                         <option value="month" selected>Tháng này</option>
                         <option value="today">Hôm nay</option>
@@ -264,6 +268,7 @@
         let proposals = [];
         let currentUser = null;
         let chartInstances = { staff: null, system: null, dept: null };
+        let activeSubscription = null; // Quản lý thời gian thực từ Supabase
 
         window.addEventListener('DOMContentLoaded', async () => {
             if (!supabaseClient) {
@@ -300,6 +305,104 @@
                 }
             }
         });
+
+        // Hàm phát ra âm thanh thông báo nhân tạo (không cần file âm thanh ngoài)
+        function playNotificationSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Tiếng Ping thứ nhất
+                const osc1 = audioCtx.createOscillator();
+                const gain1 = audioCtx.createGain();
+                osc1.connect(gain1);
+                gain1.connect(audioCtx.destination);
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                gain1.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc1.start(audioCtx.currentTime);
+                osc1.stop(audioCtx.currentTime + 0.3);
+
+                // Tiếng Ping thứ hai (cao độ hơn) sau 0.15s
+                setTimeout(() => {
+                    const osc2 = audioCtx.createOscillator();
+                    const gain2 = audioCtx.createGain();
+                    osc2.connect(gain2);
+                    gain2.connect(audioCtx.destination);
+                    osc2.type = 'sine';
+                    osc2.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5
+                    gain2.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                    osc2.start(audioCtx.currentTime);
+                    osc2.stop(audioCtx.currentTime + 0.4);
+                }, 150);
+
+            } catch (e) {
+                console.warn("Trình duyệt chặn phát âm thanh trước tương tác người dùng: ", e);
+            }
+        }
+
+        // Hiển thị thông báo Toast đẹp ở góc màn hình
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = "bg-slate-900 border-l-4 border-amber-500 text-white p-4 rounded-xl shadow-xl flex items-center justify-between gap-3 text-xs md:text-sm transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto max-w-sm";
+            toast.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="text-lg">🔔</span>
+                    <div>
+                        <p class="font-bold text-amber-400">Yêu cầu công việc mới!</p>
+                        <p class="text-gray-300 font-medium">${message}</p>
+                    </div>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-white font-bold ml-2">✕</button>
+            `;
+            container.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 50);
+
+            // Tự động tắt sau 6 giây
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 6000);
+        }
+
+        // Lắng nghe thay đổi DB thời gian thực (Realtime) để thông báo khi được phân công việc
+        function subscribeToProposalUpdates() {
+            if (!supabaseClient || !currentUser) return;
+            
+            // Huỷ đăng ký cũ nếu có
+            if (activeSubscription) {
+                supabaseClient.removeChannel(activeSubscription);
+            }
+
+            activeSubscription = supabaseClient
+                .channel('realtime_proposals')
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'proposals' }, (payload) => {
+                    const oldData = payload.old;
+                    const newData = payload.new;
+
+                    // Nếu người đăng nhập hiện tại là nhân viên tiếp nhận
+                    if (currentUser.role === 'staff') {
+                        // Kiểm tra nếu đề xuất chuyển sang giao cho chính nhân viên này
+                        const isAssignedToMeNow = (newData.staff_user === currentUser.username);
+                        const wasNotAssignedToMeBefore = (oldData.staff_user !== currentUser.username);
+
+                        if (isAssignedToMeNow && wasNotAssignedToMeBefore) {
+                            playNotificationSound();
+                            showToast(`Bạn vừa được phân công đề xuất: "${newData.title}"`);
+                        }
+                    }
+                    
+                    // Cập nhật lại toàn bộ danh sách dữ liệu hiển thị
+                    fetchDataFromSupabase();
+                })
+                .subscribe();
+        }
 
         async function loadAllUsers() {
             if (!supabaseClient) return;
@@ -350,11 +453,16 @@
             document.getElementById('role-badge').innerText = user.role==='admin'?'Admin':(user.role==='manager'?'Quản lý':'Nhân viên');
             
             applyUIPermissions();
+            subscribeToProposalUpdates(); // Bật lắng nghe Realtime
             fetchDataFromSupabase();
             switchTab(user.role === 'staff' ? 'proposals' : 'dashboard');
         }
 
         function handleLogout() {
+            if (activeSubscription) {
+                supabaseClient.removeChannel(activeSubscription);
+                activeSubscription = null;
+            }
             currentUser = null;
             localStorage.removeItem('proposal_app_user');
             document.getElementById('login-screen').classList.remove('hidden');
@@ -386,9 +494,15 @@
             const btnDashboard = document.getElementById('btn-dashboard');
             const btnProposals = document.getElementById('btn-proposals');
             const btnStatistics = document.getElementById('btn-statistics');
+            const timeFilterWrapper = document.getElementById('time-filter-wrapper');
+
             btnDashboard.style.display = 'block'; btnProposals.style.display = 'block'; btnStatistics.style.display = 'block';
+            timeFilterWrapper.style.display = 'flex';
+
             if (currentUser.role === 'staff') {
-                btnDashboard.style.display = 'none'; btnStatistics.style.display = 'none';
+                btnDashboard.style.display = 'none'; 
+                btnStatistics.style.display = 'none';
+                timeFilterWrapper.style.display = 'none'; // Ẩn hoàn toàn bộ lọc thời gian đối với nhân viên tiếp nhận
             } else if (currentUser.role === 'manager') {
                 btnProposals.style.display = 'none';
             }
@@ -623,13 +737,20 @@
 
         function render() {
             if (!currentUser) return;
+            
+            // Xử lý bộ lọc thời gian: Nhân viên không bị giới hạn bộ lọc thời gian
             const timeRange = document.getElementById('time-range-filter').value;
-            let timeFiltered = proposals.filter(p => isProposalInTimeRange(p.created_at, timeRange));
+            let timeFiltered = proposals.filter(p => {
+                if (currentUser.role === 'staff') {
+                    return true; // Không lọc theo thời gian đối với nhân viên
+                }
+                return isProposalInTimeRange(p.created_at, timeRange);
+            });
 
-            // Logic lọc cho màn hình Kanban Dashboard
+            // Logic lọc cho màn hình Kanban Dashboard (Nếu admin/manager muốn xem)
             let kanbanData = [...timeFiltered];
             if (currentUser.role === 'staff') {
-                kanbanData = timeFiltered.filter(p => p.staff_user === currentUser.username && p.status !== "Hoàn thành");
+                kanbanData = proposals.filter(p => p.staff_user === currentUser.username && p.status !== "Hoàn thành");
             }
 
             document.getElementById('kpi-total').innerText = kanbanData.length;
@@ -698,10 +819,13 @@
 
             let desktopHtml = ''; let mobileHtml = '';
 
-            timeFiltered.forEach(p => {
+            // Xác định tệp dữ liệu hiển thị gốc trong bảng
+            let dataForTable = (currentUser.role === 'staff') ? proposals : timeFiltered;
+
+            dataForTable.forEach(p => {
                 // Kiểm tra phân quyền lọc cho nhân viên tại bảng danh sách đề xuất
                 if (currentUser.role === 'staff') {
-                    // Chỉ hiển thị đề xuất được phân công cho mình & chưa hoàn thành
+                    // Chỉ hiển thị đề xuất được phân công cho mình & chưa hoàn thành (Không giới hạn thời gian nhận)
                     if (p.staff_user !== currentUser.username || p.status === "Hoàn thành") {
                         return; 
                     }
@@ -765,6 +889,8 @@
 
             tableBody.innerHTML = desktopHtml;
             mobileCardsContainer.innerHTML = mobileHtml || '<p class="text-center text-gray-400 text-xs py-6">Không tìm thấy đề xuất.</p>';
+            
+            // Đối với admin/manager, tính toán số liệu thống kê theo mốc thời gian lọc
             calculateAdvancedStatistics(timeFiltered, staffUsersList);
         }
 
