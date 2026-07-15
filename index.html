@@ -501,24 +501,46 @@
 
         async function addProposal(e) {
             e.preventDefault();
-            if (!supabaseClient) return;
+            if (!supabaseClient) {
+                alert("Chưa khởi tạo Supabase Client!");
+                return;
+            }
             const title = document.getElementById('p-title').value.trim();
             const system = document.getElementById('p-system').value.trim();
             const dept = document.getElementById('p-dept').value.trim();
             const floor = document.getElementById('p-floor').value;
 
+            // Sửa lỗi ở đây: Sử dụng chuẩn định dạng ISO TimeString để tránh lỗi kiểu dữ liệu DateTime / Timestamp trên Supabase
             const now = new Date();
-            const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            const dateStr = now.toISOString();
 
-            const { error } = await supabaseClient.from('proposals').insert([{
-                title, system, dept, floor, created_at: dateStr, completed_at: "",
-                staff_user: "", staff_name: "", status: "Chờ phân công", reason: ""
-            }]);
+            try {
+                const { error } = await supabaseClient.from('proposals').insert([{
+                    title, 
+                    system, 
+                    dept, 
+                    floor, 
+                    created_at: dateStr, 
+                    completed_at: "",
+                    staff_user: "", 
+                    staff_name: "", 
+                    status: "Chờ phân công", 
+                    reason: ""
+                }]);
 
-            if (error) alert("Lỗi lưu DB: " + error.message);
-            else {
-                document.getElementById('p-title').value = ''; document.getElementById('p-system').value = ''; document.getElementById('p-dept').value = '';
-                await fetchDataFromSupabase();
+                if (error) {
+                    console.error("Supabase Error details:", error);
+                    alert("Lỗi lưu DB: " + error.message);
+                } else {
+                    alert("Đăng ký đề xuất mới thành công!");
+                    document.getElementById('p-title').value = ''; 
+                    document.getElementById('p-system').value = ''; 
+                    document.getElementById('p-dept').value = '';
+                    await fetchDataFromSupabase();
+                }
+            } catch (err) {
+                console.error("Runtime error:", err);
+                alert("Đã xảy ra lỗi hệ thống: " + err.message);
             }
         }
 
@@ -540,13 +562,12 @@
         async function staffAction(id, action) {
             if (!supabaseClient) return;
             const now = new Date();
-            const timeNow = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            const timeNow = now.toISOString();
 
             let updateFields = {};
             if (action === 'confirm') {
                 updateFields = { status: "Đang xử lý" };
             } else if (action === 'complete') {
-                // Đã loại bỏ phần yêu cầu nhập link ảnh
                 updateFields = { status: "Hoàn thành", completed_at: timeNow, reason: "" };
             } else if (action === 'incomplete') {
                 const r = prompt("Nhập lý do hoãn/chưa xong:");
